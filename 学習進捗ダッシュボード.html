@@ -545,6 +545,17 @@ var ECON_RANK={
  'スタグフレーションとフィリップス曲線のシフト':'C'
 };
 function itemRank(it){return ECON_RANK[(it.title||'').replace(/^[A-E]\s+/,'')]||null;}
+/* 経済学も他タブと同じランクグループ表示（チェックボックス等）にする：カード項目を論点として扱う */
+subjTopics.forEach(function(s){
+  if(s.name==='経済学・経済政策'&&s.items&&s.items.length){
+    s.topics=s.items.map(function(it){
+      var nm=(it.title||'').replace(/^[A-E]\s+/,'');
+      return {name:nm,src:(it.ctx||'').replace(/\s*／\s*tabNone\s*$/,''),rank:ECON_RANK[nm]||null,cospa:'',
+        dq:it.dq,q:it.q,df:it.df,blk:it.blk,den:it.den||((it.q+it.blk)||1),pct:it.pct};
+    });
+    s.hasRank=true;
+  }
+});
 var tabbar=document.getElementById('tabbar'),subjpanels=document.getElementById('subjpanels');
 subjTopics.forEach(function(s,i){
   var btn=document.createElement('button');
