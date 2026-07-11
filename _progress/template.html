@@ -489,6 +489,12 @@ var prMode='low';
 var RANKS=['S','A','B','C','D','E'];
 var COS={'◎':'cs-d','○':'cs-c','△':'cs-t','✕':'cs-x','×':'cs-x'};
 var COSORD={'◎':0,'○':1,'△':2,'✕':3,'×':3,'':9};
+var RKCOL={S:'#dc2626',A:'#ea580c',B:'#16a34a',C:'#2563eb',D:'#64748b',E:'#94a3b8'};
+/* 科目別タブのランク絞り込み（全科目共有・localStorage保存。'_un'=ランク未設定） */
+var PR_RANK_KEY='dashPrRanksV1';
+function loadPrRanks(){try{var a=JSON.parse(localStorage.getItem(PR_RANK_KEY));return new Set(Array.isArray(a)&&a.length?a:RANKS.concat(['_un']));}catch(e){return new Set(RANKS.concat(['_un']));}}
+var prRanks=loadPrRanks();
+function savePrRanks(){try{localStorage.setItem(PR_RANK_KEY,JSON.stringify(Array.from(prRanks)));}catch(e){}}
 var tabbar=document.getElementById('tabbar'),subjpanels=document.getElementById('subjpanels');
 subjTopics.forEach(function(s,i){
   var btn=document.createElement('button');
@@ -605,9 +611,25 @@ function renderRank(s,pan){
     +'<span class="cospa cs-c">○</span>標準 <span class="cospa cs-t">△</span>やや重い '
     +'<span class="cospa cs-x">✕</span>重い　→ 同ランクなら◎から先に。'
     +'<br>左端の□にチェック＝<b>最低限でOK</b>（達成率に関わらず完了扱い・例外）。</div>';
+  // この科目に存在するランク＋未設定
+  var present=RANKS.filter(function(rk){return s.topics.some(function(t){return t.rank===rk;});});
+  var hasUn=s.topics.some(function(t){return !t.rank;});
+  var keys=present.concat(hasUn?['_un']:[]);
+  var allSel=keys.every(function(k){return prRanks.has(k);});
+  // ランク絞り込みチップ
+  h+='<div class="rfil"><span class="lb">ランク絞り込み:</span>'
+    +'<button class="rfchip prfall"'+(allSel?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>全</button>';
+  present.forEach(function(rk){var on=prRanks.has(rk);
+    h+='<button class="rfchip prfr" data-r="'+rk+'"'+(on?' style="background:'+RKCOL[rk]+';color:#fff;border-color:transparent"':'')+'>'+rk+'</button>';});
+  if(hasUn){var on=prRanks.has('_un');
+    h+='<button class="rfchip prfr" data-r="_un"'+(on?' style="background:#94a3b8;color:#fff;border-color:transparent"':'')+'>未</button>';}
+  h+='</div>';
+  var shown=0;
   RANKS.forEach(function(rk){
+    if(!prRanks.has(rk))return;
     var ts=s.topics.filter(function(t){return t.rank===rk;});
     if(!ts.length)return;
+    shown+=ts.length;
     ts.sort(function(a,b){return (COSORD[a.cospa]-COSORD[b.cospa])||(effPct(s.name,a)-effPct(s.name,b));});
     h+='<div class="rkgroup"><div class="rkband"><span class="rkbadge rk-'+rk+'">'+rk+'</span>'
       +'<span class="rklabel">ランク '+rk+'（'+ts.length+'論点）</span></div>';
@@ -615,13 +637,22 @@ function renderRank(s,pan){
     h+='</div>';
   });
   var un=s.topics.filter(function(t){return !t.rank;});
-  if(un.length){
+  if(un.length&&prRanks.has('_un')){
+    shown+=un.length;
     h+='<div class="rkgroup"><div class="rkband"><span class="rkbadge rk-E" style="background:#cbd5e1;color:#334155">–</span><span class="rklabel">ランク未設定（'+un.length+'）</span></div>';
     un.sort(function(a,b){return effPct(s.name,a)-effPct(s.name,b);});
     un.forEach(function(t){h+=topicRow(t,s.name);});
     h+='</div>';
   }
+  if(!shown)h+='<div class="rkhint" style="text-align:center">選択中のランクに該当する論点がありません。</div>';
   pan.innerHTML=h;
+  // チップのイベント
+  pan.querySelectorAll('.prfr').forEach(function(b){b.addEventListener('click',function(){
+    var r=b.getAttribute('data-r');if(prRanks.has(r))prRanks.delete(r);else prRanks.add(r);savePrRanks();renderPr();});});
+  var fall=pan.querySelector('.prfall');
+  if(fall)fall.addEventListener('click',function(){
+    var allOn=keys.every(function(k){return prRanks.has(k);});
+    keys.forEach(function(k){if(allOn)prRanks.delete(k);else prRanks.add(k);});savePrRanks();renderPr();});
 }
 function renderItems(s,pan){
   var items=s.items.slice().sort(function(a,b){
@@ -652,7 +683,6 @@ renderPr();
 /* ===== 総合優先（全科目ミックス） ===== */
 var allTopics=[];
 subjTopics.forEach(function(s){s.topics.forEach(function(t){if(t.rank)allTopics.push({subj:s.name,t:t});});});
-var RKCOL={S:'#dc2626',A:'#ea580c',B:'#16a34a',C:'#2563eb',D:'#64748b',E:'#94a3b8'};
 var PREF_KEY='dashPrefV1';
 function loadPref(){try{return JSON.parse(localStorage.getItem(PREF_KEY))||{};}catch(e){return {};}}
 function savePref(){try{localStorage.setItem(PREF_KEY,JSON.stringify({mode:gMode,ranks:Array.from(gRanks)}));}catch(e){}}
