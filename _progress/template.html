@@ -188,6 +188,7 @@ details[open]>summary .caret{transform:rotate(90deg)}
   padding:8px;border-radius:9px;background:var(--panel);border:1px solid var(--line);margin:4px 0}
 .growrow.hot{border-color:color-mix(in srgb,#ea580c 40%,var(--line))}
 .growrow .rkbadge{min-width:24px;height:22px;font-size:.74rem;border-radius:6px}
+.ptitle .rkbadge{display:inline-grid;width:auto;min-width:20px;height:18px;font-size:.66rem;padding:0 6px;border-radius:6px;vertical-align:-3px}
 .gsubj{font-size:.66rem;color:var(--accent);font-weight:700}
 .gseg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:6px}
 .gseg button{appearance:none;border:0;background:var(--panel);color:var(--muted);font:inherit;font-size:.76rem;font-weight:700;padding:5px 12px;cursor:pointer}
@@ -495,6 +496,55 @@ var PR_RANK_KEY='dashPrRanksV1';
 function loadPrRanks(){try{var a=JSON.parse(localStorage.getItem(PR_RANK_KEY));return new Set(Array.isArray(a)&&a.length?a:RANKS.concat(['_un']));}catch(e){return new Set(RANKS.concat(['_un']));}}
 var prRanks=loadPrRanks();
 function savePrRanks(){try{localStorage.setItem(PR_RANK_KEY,JSON.stringify(Array.from(prRanks)));}catch(e){}}
+/* 経済学カード→頻出ランク（暫定・ロードマップ準拠。ズレは下の値を直すだけでOK） */
+var ECON_RANK={
+ '所得と需要量の関係（上級財・中級財・下級財）':'A',
+ '需要の価格弾力性':'S',
+ '需要の交差弾力性（粗代替財・粗補完財）':'B',
+ '需要曲線とギッフェン財・特殊な無差別曲線':'A',
+ '価格効果＝代替効果＋所得効果（スルツキー分解）':'A',
+ '予算制約線':'C',
+ '効用最大化条件と最適消費点':'A',
+ '費用関数と利潤最大化条件':'A',
+ '限界費用・平均費用・平均可変費用（グラフでの見分け）':'A',
+ '損益分岐点・操業停止点':'B',
+ '等費用線':'A',
+ '等産出量曲線と最小費用':'B',
+ '国際貿易論（比較優位・要素価格均等化）':'B',
+ '自由貿易・保護貿易の余剰分析':'A',
+ 'プライス・メイカーと限界収入MR':'B',
+ '利潤最大化MR=MCと死荷重':'A',
+ '公共財・外部不経済（競合性×排除性）':'B',
+ '費用逓減産業・情報の非対称性':'C',
+ '寡占市場・屈折需要曲線（価格の硬直性）':'B',
+ 'ゲーム理論（ナッシュ均衡・支配戦略）':'B',
+ '国内・国民／総額・純額（GDP・GNI・NDP）':'B',
+ '計算対象（市場取引・帰属計算・生産活動）':'C',
+ '三面等価の原則':'B',
+ '名目GDP・実質GDP・物価指数':'B',
+ '景気動向指数（先行・一致・遅行）':'D',
+ '45度線分析と乗数効果':'S',
+ '各種乗数（投資・政府支出・租税・均衡予算）':'S',
+ 'マネーストックと指標（M1・M2・M3）':'C',
+ 'ハイパワード・マネーと貨幣乗数':'B',
+ '金融政策（公開市場操作・法定準備率操作）':'B',
+ 'IS曲線（財市場の均衡）':'A',
+ 'LM曲線（貨幣市場の均衡）':'B',
+ '政策効果とクラウディング・アウト':'B',
+ '労働市場（古典派 vs ケインズ）':'B',
+ '総供給曲線(AS)・総需要曲線(AD)':'B',
+ '消費の理論（5仮説）':'C',
+ 'マンデル＝フレミング・モデル（開放経済）':'S',
+ '消費者余剰・生産者余剰・社会的余剰の基本':'S',
+ '従量税の転嫁と余剰変化':'A',
+ '価格規制（上限・下限）と余剰変化':'B',
+ '損益分岐点・操業停止点と短期供給行動':'B',
+ '完全競争市場の長期均衡':'B',
+ 'フィリップス曲線の基本と短期トレードオフ':'C',
+ '自然失業率仮説と長期フィリップス曲線':'C',
+ 'スタグフレーションとフィリップス曲線のシフト':'C'
+};
+function itemRank(it){return ECON_RANK[(it.title||'').replace(/^[A-E]\s+/,'')]||null;}
 var tabbar=document.getElementById('tabbar'),subjpanels=document.getElementById('subjpanels');
 subjTopics.forEach(function(s,i){
   var btn=document.createElement('button');
@@ -655,22 +705,44 @@ function renderRank(s,pan){
     keys.forEach(function(k){if(allOn)prRanks.delete(k);else prRanks.add(k);});savePrRanks();renderPr();});
 }
 function renderItems(s,pan){
-  var items=s.items.slice().sort(function(a,b){
-    return prMode==='low' ? ((a.pct-b.pct)||(b.den-a.den)) : ((b.pct-a.pct)||(b.den-a.den));
-  });
-  var h='<div class="prbar"><span class="lbl">'+esc(s.name)+'（項目 '+items.length+'／達成率 '+s.pct+'%）　並び順:</span>'
+  // 各項目にランク付与（経済学は ECON_RANK）
+  var withR=s.items.map(function(it){return {it:it,rk:itemRank(it)};});
+  var present=RANKS.filter(function(rk){return withR.some(function(x){return x.rk===rk;});});
+  var hasUn=withR.some(function(x){return !x.rk;});
+  var keys=present.concat(hasUn?['_un']:[]);
+  var allSel=keys.every(function(k){return prRanks.has(k);});
+  var vis=withR.filter(function(x){return x.rk?prRanks.has(x.rk):prRanks.has('_un');});
+  vis.sort(function(a,b){return prMode==='low'?((a.it.pct-b.it.pct)||(b.it.den-a.it.den)):((b.it.pct-a.it.pct)||(b.it.den-a.it.den));});
+  var h='<div class="prbar"><span class="lbl">'+esc(s.name)+'（項目 '+s.items.length+'／達成率 '+s.pct+'%）　並び順:</span>'
     +'<span class="seg"><button class="prlow '+(prMode==='low'?'on':'')+'">未着手を優先（低い順）</button>'
-    +'<button class="prhigh '+(prMode==='high'?'on':'')+'">達成率が高い順</button></span></div><div class="prcat"><div class="prlist">';
-  items.forEach(function(it,idx){
-    var hot=prMode==='low'&&it.pct===0;
+    +'<button class="prhigh '+(prMode==='high'?'on':'')+'">達成率が高い順</button></span></div>';
+  // ランク絞り込み（他科目タブと共有）
+  h+='<div class="rfil"><span class="lb">ランク絞り込み:</span>'
+    +'<button class="rfchip prfall"'+(allSel?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>全</button>';
+  present.forEach(function(rk){var on=prRanks.has(rk);
+    h+='<button class="rfchip prfr" data-r="'+rk+'"'+(on?' style="background:'+RKCOL[rk]+';color:#fff;border-color:transparent"':'')+'>'+rk+'</button>';});
+  if(hasUn){var on=prRanks.has('_un');
+    h+='<button class="rfchip prfr" data-r="_un"'+(on?' style="background:#94a3b8;color:#fff;border-color:transparent"':'')+'>未</button>';}
+  h+='</div>';
+  h+='<div class="prcat"><div class="prlist">';
+  vis.forEach(function(x,idx){
+    var it=x.it,hot=prMode==='low'&&it.pct===0;
+    var rb=x.rk?'<span class="rkbadge rk-'+x.rk+'" style="margin-right:7px">'+x.rk+'</span>':'';
     h+='<div class="pritem'+(hot?' hot':'')+'"><span class="pnum">'+(idx+1)+'</span>'
-      +'<span class="pmain"><span class="ptitle">'+esc(it.title)+'</span><span class="pctx">'+esc(it.ctx)+'</span></span>'
+      +'<span class="pmain"><span class="ptitle">'+rb+esc((it.title||'').replace(/^[A-E]\s+/,''))+'</span><span class="pctx">'+esc(it.ctx)+'</span></span>'
       +bar(it.dq,it.df,it.den)+'<span class="frac">'+frac(it.dq,it.q,it.df,it.blk)+'</span>'
       +'<span class="pct">'+it.pct+'%</span></div>';
   });
+  if(!vis.length)h+='<div class="rkhint" style="text-align:center">選択中のランクに該当する項目がありません。</div>';
   h+='</div></div>';pan.innerHTML=h;
   pan.querySelector('.prlow').addEventListener('click',function(){prMode='low';renderPr();});
   pan.querySelector('.prhigh').addEventListener('click',function(){prMode='high';renderPr();});
+  pan.querySelectorAll('.prfr').forEach(function(b){b.addEventListener('click',function(){
+    var r=b.getAttribute('data-r');if(prRanks.has(r))prRanks.delete(r);else prRanks.add(r);savePrRanks();renderPr();});});
+  var fall=pan.querySelector('.prfall');
+  if(fall)fall.addEventListener('click',function(){
+    var allOn=keys.every(function(k){return prRanks.has(k);});
+    keys.forEach(function(k){if(allOn)prRanks.delete(k);else prRanks.add(k);});savePrRanks();renderPr();});
 }
 function renderPr(){
   subjTopics.forEach(function(s,i){
