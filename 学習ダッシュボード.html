@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 1次試験 学習ダッシュボード（令和8年度）</title>
+<style>
+  :root{
+    --bg:#eef2f7; --card:#ffffff; --card2:#f1f5fb; --line:#dbe3ee;
+    --txt:#1e293b; --sub:#64748b; --accent:#0284c7; --track:#e6ecf4;
+    --p1:#dc2626; --p2:#ea580c; --p3:#ca8a04; --p4:#64748b; --done:#16a34a; --input:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.55;padding:18px;}
+  .wrap{max-width:1100px;margin:0 auto;}
+  h1{font-size:1.15rem;margin:0 0 2px;}
+  .meta{color:var(--sub);font-size:.78rem;margin-bottom:14px;}
+  .meta b{color:var(--accent);}
+
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  .stat .label{color:var(--sub);font-size:.78rem;}
+  .stat .val{font-size:1.7rem;font-weight:700;margin-top:2px;}
+  .stat .val small{font-size:.85rem;color:var(--sub);font-weight:400;}
+
+  .topbar{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:8px;}
+  .topbar-left{width:100%;}
+  .dash-header{background:linear-gradient(90deg,#fffbeb,#fef3c7);border:1px solid #fde68a;border-radius:10px;padding:5px 16px;box-sizing:border-box;}
+  .dash-header h1{margin:0 0 2px;font-size:1.15rem;}
+  .dash-header .meta{font-size:.78rem;}
+  .next{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 14px;font-size:.78rem;line-height:1.4;width:100%;box-sizing:border-box;}
+  .next b{color:#b45309;}
+  .next ol{margin:3px 0 0;padding-left:16px;}
+  .next li{margin:0;}
+  .next .next-note{font-size:.72rem;background:#fff;border:1px dashed #f0c34a;border-radius:6px;padding:5px 8px;margin:4px 0;color:#92400e;line-height:1.45;}
+  .next .np-st{font-size:.68rem;background:#fff;border:1px solid #e7d9a8;border-radius:5px;padding:0 5px;margin-right:2px;}
+  /* 📅 本日の実施予定 */
+  .next .tp-box{background:#fff;border:1px solid #fcd34d;border-radius:8px;padding:6px 9px;margin:4px 0 6px;}
+  .next .tp-head{font-size:.74rem;font-weight:800;color:#b45309;margin-bottom:4px;}
+  .next .tp-group{margin:6px 0 2px;}
+  .next .tp-grouphead{display:flex;align-items:center;gap:8px;padding:3px 0 3px 8px;margin-bottom:2px;border-left:4px solid #94a3b8;}
+  .next .tp-grouphead .tp-subj{font-size:.74rem;}
+  .next .tp-groupcount{font-size:.7rem;color:#64748b;font-weight:700;}
+  .next ol.tp-list{margin:0;padding-left:18px;}
+  .next ol.tp-list li{margin:0;padding:4px 0;line-height:1.4;display:flex;align-items:center;flex-wrap:wrap;gap:2px;border-bottom:1px solid #fde9b8;}
+  .next ol.tp-list li:last-child{border-bottom:none;}
+  .next ol.tp-list li.tp-done{opacity:.88;}
+  .next .tp-slots{margin-left:auto;display:inline-flex;gap:7px;padding-left:8px;white-space:nowrap;}
+  .next .tp-slots label{font-size:.66rem;color:#64748b;font-weight:700;display:inline-flex;align-items:center;gap:2px;cursor:pointer;user-select:none;}
+  .next .tp-slots input{margin:0;cursor:pointer;vertical-align:middle;}
+  .next .tp-slots label.on{color:#b45309;}
+  .next .tp-yest{display:inline-flex;align-items:center;gap:2px;margin-left:10px;padding-left:10px;border-left:1px solid #fde9b8;font-size:.66rem;font-weight:700;color:#64748b;cursor:pointer;user-select:none;white-space:nowrap;}
+  .next .tp-yest.on{color:#7c3aed;}
+  .next .tp-yest input{margin:0;cursor:pointer;vertical-align:middle;}
+  .next .tp-comment{font-size:.68rem;color:#0369a1;background:#e0f2fe;border:1px solid #bae6fd;border-radius:5px;padding:0 6px;margin-left:6px;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .next .tp-comment:empty{background:none;border:none;padding:0;}
+  .next .tp-jump{font-size:.78rem;line-height:1;border:none;background:transparent;cursor:pointer;padding:0 2px;vertical-align:middle;}
+  .next .tp-jump:hover{transform:translateY(1px);}
+  .next .tp-del{margin-left:10px;font-size:.82rem;line-height:1;border:1px solid #fecaca;background:#fff1f2;color:#b91c1c;cursor:pointer;padding:2px 7px;border-radius:6px;flex:none;}
+  .next .tp-del:hover{background:#fee2e2;border-color:#fca5a5;}
+  .next ol.tp-list li.tp-prio{background:#fff3d6;border-left:6px solid #f59e0b;padding-left:8px;border-radius:0 6px 6px 0;box-shadow:0 0 0 1px rgba(245,158,11,.25);}
+  .next ol.tp-list li.tp-prio b{color:#92400e;}
+  .next .tp-prio-star{font-size:1.05rem;line-height:1;margin-right:3px;filter:drop-shadow(0 0 2px rgba(245,158,11,.6));}
+  @keyframes jumpFlash{0%{background:#fde68a;}60%{background:#fef3c7;}100%{background:transparent;}}
+  tr.jump-flash > td{animation:jumpFlash 2.2s ease-out;}
+  .next .tp-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+  .next .tp-recwrap{display:inline-flex;align-items:center;gap:5px;font-weight:600;background:#fff;border:1px solid #fde68a;border-radius:7px;padding:2px 8px;}
+  .next .tp-recwrap.on{background:#dcfce7;border-color:#86efac;}
+  .next .tp-recwrap input.tp-date{font-size:.72rem;border:1px solid #e2e8f0;border-radius:5px;padding:1px 4px;font-family:inherit;}
+  .next .tp-recwrap label{display:inline-flex;align-items:center;gap:2px;cursor:pointer;user-select:none;font-size:.72rem;color:#475569;}
+  .next .tp-recwrap label.on{color:#15803d;}
+  .next .tp-recbadge{font-size:.66rem;font-weight:800;color:#15803d;}
+  .next .tp-rand{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;font-weight:600;}
+  .next .tp-rand-btn{font-size:.7rem;font-weight:800;color:#fff;background:#d97706;border:none;border-radius:6px;padding:3px 9px;cursor:pointer;}
+  .next .tp-rand-btn:hover{background:#b45309;}
+  .next .tp-rand-clear{font-size:.66rem;color:#92400e;background:#fff;border:1px solid #fcd34d;border-radius:6px;padding:2px 7px;cursor:pointer;}
+  .next .tp-rand-pool{display:inline-flex;align-items:center;gap:6px;font-size:.66rem;color:#92400e;}
+  .next .tp-rand-pool label{display:inline-flex;align-items:center;gap:2px;cursor:pointer;user-select:none;font-weight:700;}
+  .next .tp-rand-pool label.on{color:#b45309;}
+  .next .tp-rand-pool input{margin:0;cursor:pointer;vertical-align:middle;}
+  .next .tp-subj{display:inline-block;color:#fff;font-size:.66rem;font-weight:700;border-radius:5px;padding:0 6px;margin-right:3px;vertical-align:middle;}
+  .next .tp-state{font-size:.68rem;color:#6b7280;}
+  .next .tp-doneflag{font-size:.66rem;color:#16a34a;font-weight:700;}
+  .next .tp-empty{font-size:.7rem;background:#fff;border:1px dashed #fcd34d;border-radius:7px;padding:6px 9px;margin:4px 0 6px;color:#92400e;line-height:1.45;}
+  .next ol.tp-list li .tp-check{margin-right:5px;vertical-align:middle;cursor:pointer;}
+  .next .tp-extra-head{font-size:.7rem;font-weight:700;color:#059669;margin:6px 0 3px;padding-left:2px;}
+  .next ul.tp-extra-list{list-style:none;margin:0;padding:0;}
+  .next ul.tp-extra-list li{font-size:.78rem;padding:2px 0;display:flex;align-items:center;gap:3px;}
+  .next ul.tp-extra-list li::before{content:"✅";font-size:.7rem;margin-right:2px;}
+  /* 🗒 やることメモ履歴 */
+  #todo-log .todo-entry{border-left:4px solid #fbbf24;background:#fffdf5;border-radius:6px;padding:6px 10px;margin-bottom:8px;}
+  #todo-log .todo-entry .d{font-size:.78rem;font-weight:800;color:#b45309;margin-bottom:3px;}
+  #todo-log .todo-entry .b{font-size:.82rem;line-height:1.55;color:#374151;}
+
+  h2{font-size:1.05rem;margin:26px 0 12px;border-left:4px solid var(--accent);padding-left:10px;}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
+  .subj{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    border-left:5px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  .subj.r1{border-left-color:var(--p1);} .subj.r2{border-left-color:var(--p2);}
+  .subj.r3{border-left-color:var(--p3);} .subj.alt{border-left-color:var(--input);background:#faf8ff;}
+  .subj .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .subj .pri{font-size:.72rem;background:var(--card2);color:var(--sub);border-radius:20px;padding:2px 9px;white-space:nowrap;border:1px solid var(--line);}
+  .subj .nm{font-weight:700;font-size:1.05rem;}
+  .subj .role{font-size:.78rem;color:var(--sub);margin-left:6px;}
+  .subj .goal{display:flex;gap:14px;margin:8px 0 4px;font-size:.82rem;flex-wrap:wrap;}
+  .subj .goal span b{color:var(--accent);}
+  .bar{height:14px;background:var(--track);border-radius:8px;overflow:hidden;margin:6px 0 4px;position:relative;}
+  .bar > i{display:block;height:100%;border-radius:8px;}
+  .bar .pct{position:absolute;right:7px;top:-1px;font-size:.72rem;color:var(--txt);font-weight:600;}
+  .subj .detail{font-size:.78rem;color:var(--sub);margin-top:6px;}
+  .subj .detail b{color:var(--txt);font-weight:600;}
+
+  table{width:100%;border-collapse:collapse;font-size:.85rem;background:var(--card);}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{background:var(--card2);color:var(--sub);font-weight:600;font-size:.78rem;
+    position:sticky;top:0;z-index:3;box-shadow:0 1px 0 var(--line);}
+  .tasks-scroll{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:26px 0 12px;flex-wrap:wrap;}
+  .sec-head h2{margin:0;}
+  .head-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  tr:last-child td{border-bottom:none;}
+  .band{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:2px;vertical-align:middle;}
+  .b-P1{background:var(--p1);} .b-P2{background:var(--p2);} .b-P3{background:var(--p3);}
+  .b-P4{background:var(--p4);} .b-OK{background:var(--done);} .b-IN{background:var(--input);} .b-EC{background:#7c3aed;}
+  .rank{color:var(--sub);font-weight:700;width:30px;}
+  .res{font-family:"SF Mono",ui-monospace,monospace;font-size:.8rem;color:var(--sub);word-break:break-all;}
+  .tag{font-size:.72rem;padding:1px 6px;border-radius:4px;background:var(--card2);color:var(--sub);border:1px solid var(--line);}
+  input.rowcomment{width:100%;font-size:.78rem;border:1px solid var(--line);border-radius:5px;padding:3px 5px;font-family:inherit;color:var(--sub);background:#fff;}
+  input.rowcomment:focus{outline:2px solid var(--accent);}
+  textarea.rowmemo{width:100%;min-width:0;min-height:34px;border:1px solid var(--line);border-radius:6px;
+    padding:5px 7px;font-family:inherit;font-size:.74rem;background:#fffdf3;resize:vertical;color:var(--txt);}
+  textarea.rowmemo:focus{outline:2px solid var(--accent);background:#fff;}
+  .extra-rec{margin-top:10px;border:1px solid #c4b5fd;border-radius:10px;padding:9px 12px;background:#faf8ff;}
+  .extra-rec label{font-size:.78rem;font-weight:700;color:#6d28d9;display:block;margin-bottom:5px;}
+  .extra-rec .hint{font-size:.73rem;color:#7c3aed;margin-top:4px;}
+  #extra-tasks input.ex-subj,#mock-tasks input.ex-subj,#problem-tasks input.ex-subj{width:72px;font-size:.82rem;border:1px solid var(--line);border-radius:5px;padding:3px 5px;font-family:inherit;color:var(--txt);}
+  #extra-tasks input.ex-topic,#mock-tasks input.ex-topic,#problem-tasks input.ex-topic{width:100%;font-size:.82rem;border:1px solid var(--line);border-radius:5px;padding:3px 5px;font-family:inherit;color:var(--txt);}
+  #extra-tasks input.ex-res,#mock-tasks input.ex-res,#problem-tasks input.ex-res{width:100%;font-size:.8rem;border:1px solid var(--line);border-radius:5px;padding:3px 5px;font-family:"SF Mono",monospace;color:var(--sub);}
+  #extra-tasks input.ex-reason,#mock-tasks input.ex-reason,#problem-tasks input.ex-reason{width:100%;font-size:.8rem;border:1px solid var(--line);border-radius:5px;padding:3px 5px;font-family:inherit;color:var(--sub);}
+  .prob-rec{margin-top:10px;border:1px solid #6ee7b7;border-radius:10px;padding:9px 12px;background:#f0fdf4;}
+  .prob-rec label{font-size:.78rem;font-weight:700;color:#065f46;display:block;margin-bottom:5px;}
+  .prob-rec .hint{font-size:.73rem;color:#059669;margin-top:4px;}
+  .add-row-btn{margin-top:6px;font-size:.78rem;padding:4px 10px;border:1px dashed #a78bfa;border-radius:6px;background:#f5f3ff;color:#6d28d9;cursor:pointer;}
+  .add-row-btn:hover{background:#ede9fe;}
+  select.rowstate{font-size:.78rem;border:1px solid var(--line);border-radius:6px;padding:5px 6px;
+    font-family:inherit;color:var(--txt);cursor:pointer;min-width:108px;}
+  input.rowdone{width:20px;height:20px;cursor:pointer;accent-color:var(--accent);}
+  td.done-cell{text-align:center;vertical-align:middle;}
+  .refresh-group{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;color:#475569;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;padding:3px 9px;}
+  .refresh-group label{display:inline-flex;align-items:center;gap:2px;cursor:pointer;user-select:none;}
+  .refresh-group input{margin:0;cursor:pointer;}
+  #refreshSelBtn{font-size:.72rem;font-weight:700;color:#fff;background:#64748b;border:none;border-radius:5px;padding:2px 9px;cursor:pointer;}
+  #refreshSelBtn:hover{background:#475569;}
+  td.plan-cell{text-align:center;vertical-align:middle;}
+  .after-wrap{display:flex;align-items:center;justify-content:center;gap:1px;margin-top:3px;font-size:.6rem;color:#92400e;white-space:nowrap;}
+  .after-wrap input.rowafter{width:30px;font-size:.68rem;text-align:center;border:1px solid #fcd34d;border-radius:4px;padding:1px 2px;font-family:inherit;}
+  .after-wrap .after-clear{border:none;background:transparent;color:#b45309;font-size:.8rem;line-height:1;cursor:pointer;padding:0 1px;}
+  .after-wrap .after-clear:hover{color:#dc2626;}
+  td.rec-cell{text-align:center;vertical-align:middle;}
+  tr.done-row{background:rgba(0,0,0,.018);}
+  tr.rec-row{background:#fffbeb;}
+  tr.rec-row.done-row{background:#fffdf5;}
+  /* ⭐昨日「優先」にチェックした行＝本日とくに目立たせる */
+  tr.prio-row{background:#fff3d6 !important;box-shadow:inset 6px 0 0 #f59e0b;}
+  tr.prio-row.done-row{background:#fff8e6 !important;}
+  tr.prio-row td:nth-child(2){font-weight:800;color:#92400e;}
+  tr.prio-row td:nth-child(2)::before{content:"⭐優先 ";font-size:.7rem;color:#d97706;font-weight:800;letter-spacing:.5px;}
+  @keyframes prioPulse{0%,100%{box-shadow:inset 6px 0 0 #f59e0b;}50%{box-shadow:inset 6px 0 0 #f59e0b,0 0 0 2px rgba(245,158,11,.35);}}
+  tr.prio-row{animation:prioPulse 1.8s ease-in-out 3;}
+  .plan-cell .plan-lab,.plan-cell .prio-lab{display:inline-flex;align-items:center;gap:3px;font-size:.66rem;font-weight:700;white-space:nowrap;cursor:pointer;user-select:none;border-radius:6px;padding:1px 6px;border:1px solid transparent;}
+  .plan-cell .plan-lab input,.plan-cell .prio-lab input{margin:0;cursor:pointer;vertical-align:middle;}
+  .plan-cell .plan-lab{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe;}
+  .plan-cell .prio-lab{color:#b45309;background:#fff7ed;border-color:#fed7aa;margin-left:6px;}
+  /* チェック時に色を濃くして状態をわかりやすく */
+  .plan-cell .plan-lab:has(input:checked){background:#dbeafe;border-color:#60a5fa;}
+  .plan-cell .prio-lab:has(input:checked){background:#ffedd5;border-color:#fb923c;}
+  .table-bar{display:flex;justify-content:flex-end;gap:8px;margin:10px 0;align-items:center;flex-wrap:wrap;}
+  .table-bar .hint{margin:0;margin-right:auto;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--sub);margin:10px 0 0;}
+  .legend span{display:flex;align-items:center;gap:5px;}
+
+  /* 学習ログ */
+  .log-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:760px){.log-wrap{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  .panel h3{margin:0 0 8px;font-size:.95rem;}
+  textarea{width:100%;min-height:160px;border:1px solid var(--line);border-radius:8px;padding:10px;
+    font-family:inherit;font-size:.88rem;color:var(--txt);background:#fcfdff;resize:vertical;}
+  .btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  button{border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:8px;
+    padding:7px 13px;font-size:.83rem;cursor:pointer;font-family:inherit;}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  button:hover{filter:brightness(.97);}
+  .hint{font-size:.74rem;color:var(--sub);margin-top:6px;}
+  .timeline{max-height:300px;overflow-y:auto;padding-right:6px;}
+  .log-date{margin-bottom:14px;}
+  .log-date > .d{font-size:.95rem;color:var(--txt);font-weight:700;border-bottom:2px solid var(--line);padding-bottom:4px;margin-bottom:8px;}
+  .log-subj{border-left:4px solid var(--accent);padding:3px 0 6px 12px;margin-bottom:10px;}
+  .subj-tag{display:inline-block;font-size:.82rem;font-weight:700;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:1px 9px;margin-bottom:5px;color:var(--accent);}
+  .timeline .b{font-size:1.05rem;line-height:1.65;margin:3px 0;}
+  .timeline .b b{color:#b45309;font-weight:700;}
+  .timeline .a{font-size:.98rem;line-height:1.6;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:9px 12px;margin-top:6px;}
+  .timeline .a b{color:var(--accent);font-weight:700;}
+  .timeline .a::before{content:"💬 助言：";color:var(--accent);font-weight:700;}
+
+  footer{margin-top:30px;color:var(--sub);font-size:.75rem;border-top:1px solid var(--line);padding-top:12px;}
+  .chart-panel{padding:14px 16px;}
+  .chart-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:14px;font-size:.78rem;}
+  .chart-legend span{display:inline-flex;align-items:center;gap:5px;color:var(--sub);}
+  .chart-legend i{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  .chart-area{display:flex;align-items:flex-end;gap:18px;min-height:200px;padding:8px 4px 0;overflow-x:auto;}
+  .chart-col{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;min-width:64px;}
+  .chart-bar{display:flex;flex-direction:column-reverse;width:46px;border-radius:6px 6px 0 0;overflow:hidden;
+    box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .chart-seg{width:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;
+    font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.25);transition:opacity .15s;}
+  .chart-seg:hover{opacity:.78;}
+  .chart-total{font-size:.82rem;font-weight:800;color:var(--txt);margin-bottom:3px;}
+  .chart-date{font-size:.74rem;color:var(--sub);margin-top:7px;font-weight:600;text-align:center;white-space:nowrap;}
+  .chart-note{font-size:.74rem;color:var(--sub);margin-top:12px;border-top:1px dashed var(--line);padding-top:8px;}
+  code{background:var(--card2);padding:1px 5px;border-radius:4px;font-size:.9em;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="topbar-left dash-header">
+      <h1>📊 1次試験 学習ダッシュボード</h1>
+      <div class="meta" style="margin-bottom:0">令和8年度（2026）・全7科目　│　最終更新 <b id="updated"></b>　│　試験まで <b id="countdown"></b></div>
+    </div>
+    <div class="next" id="next"></div>
+  </div>
+
+  <div class="sec-head">
+    <h2>論点別 優先タスク（科目ミックス）</h2>
+    <div class="head-btns">
+      <button class="js-pickdir">📁 保存先フォルダ</button>
+      <button class="primary js-save">💾 保存</button>
+      <button id="refreshDoneBtn" title="「✓本日実施」のチェックを全部外します">🔄 本日実施をリフレッシュ</button>
+      <span class="refresh-group">🔄 リフレッシュ：<label><input type="checkbox" class="rf-target" value="plan" checked>翌日予定</label><label><input type="checkbox" class="rf-target" value="after">N日後</label><button id="refreshSelBtn" title="チェックした対象のチェック/設定を全部外します">実行</button></span>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i class="band b-P1"></i>P1 底の穴(未着手)</span>
+    <span><i class="band b-P2"></i>P2 底上げ(S済だが弱い)</span>
+    <span><i class="band b-P3"></i>P3 上積み(得点源A/B)</span>
+    <span><i class="band b-P4"></i>P4 守り維持(深追い禁止)</span>
+    <span><i class="band b-OK"></i>仕上済</span>
+    <span><i class="band b-IN"></i>インプット先行</span>
+  </div>
+  <div class="tasks-scroll">
+    <table id="tasks"><thead><tr>
+      <th>#</th><th style="width:160px">論点</th><th style="width:54px" title="前日に「翌日も予定」をチェックした行は翌日ここに自動でチェックが入ります">⭐本日<br>推奨</th><th>科目</th><th style="width:72px">確認○△×</th><th style="min-width:200px">コメント</th><th>状態</th><th style="width:130px">📁 ファイル</th><th>✓本日<br>実施</th><th style="width:118px" title="📅翌日も＝翌日も続けてやる（翌日『⭐本日推奨』に自動ON）／⭐優先＝明日これを優先（本日の実施予定の先頭に強調表示）／N日後＝入力した日数後の当日だけ実施予定へ表示">📅翌日も<small>／</small>⭐優先<br><small>／N日後</small></th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+  <div class="hint" style="margin-top:8px"><b>今日やった行は「✓本日実施」にチェック</b> → <b>「保存」</b>で<u>チェックした行だけ</u>が当日の記録として書き出されます。チャットで「更新」と言えば私が読んで進捗反映＋助言（コピペ不要）。チェックは<u>リロードしても保持</u>されます。消したいときは<b>「🔄 本日実施をリフレッシュ」</b>で一括クリア。<br>📅<b>翌日も予定</b>にチェックした行は、<u>翌日になると⭐<b>本日推奨</b>へ自動でチェック</u>が入ります（前日に立てた予定が翌日の推奨に反映）。</div>
+
+  <div class="extra-rec">
+    <label>📋 追加記録</label>
+    <div class="tasks-scroll" style="border-color:#ddd6fe">
+      <table id="extra-tasks"><thead><tr>
+        <th>論点・内容</th><th style="width:54px" title="前日に「翌日も予定」をチェックした行は翌日ここに自動でチェックが入ります">⭐本日<br>推奨</th><th style="width:80px">科目</th><th style="width:90px">確認○△×</th><th style="min-width:200px">コメント</th><th>状態</th><th style="width:130px">📁 ファイル</th><th>✓本日<br>実施</th><th style="width:118px" title="📅翌日も＝翌日も続けてやる（翌日『⭐本日推奨』に自動ON）／⭐優先＝明日これを優先（本日の実施予定の先頭に強調表示）／N日後＝入力した日数後の当日だけ実施予定へ表示">📅翌日も<small>／</small>⭐優先<br><small>／N日後</small></th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+    <button class="add-row-btn" id="addExtraRow">＋ 行を追加</button>
+    <button class="add-row-btn" id="restorePlanBtn" style="background:#fef9c3;border-color:#fde68a" title="6/22に保存された予定のうち、今ない項目だけを追加で復元します">↩ 6/22の予定を復元</button>
+    <button class="add-row-btn" id="moveMockBtn" style="background:#dbeafe;border-color:#bfdbfe" title="模試・直前まとめ関連の行を下の『模試・直前まとめ』へ移動します">↪ 模試・直前の行を分離</button>
+    <div class="hint">優先タスク表と同じ列構成（⭐本日推奨・理由・📅翌日も予定）。<b>📅翌日も予定</b>にチェックした行は<u>翌日になると⭐本日推奨へ自動でチェック</u>が入ります。ここに書いた内容も「保存」で JSON に含まれます。チャットで「更新」と伝えれば私が反映します。</div>
+  </div>
+
+  <div class="extra-rec">
+    <label>📝 模試・直前まとめ</label>
+    <div class="tasks-scroll" style="border-color:#bfdbfe">
+      <table id="mock-tasks"><thead><tr>
+        <th>論点・内容</th><th style="width:54px" title="前日に「翌日も予定」をチェックした行は翌日ここに自動でチェックが入ります">⭐本日<br>推奨</th><th style="width:80px">科目</th><th style="width:90px">確認○△×</th><th style="min-width:200px">コメント</th><th>状態</th><th style="width:130px">📁 ファイル</th><th>✓本日<br>実施</th><th style="width:118px" title="📅翌日も＝翌日も続けてやる（翌日『⭐本日推奨』に自動ON）／⭐優先＝明日これを優先（本日の実施予定の先頭に強調表示）／N日後＝入力した日数後の当日だけ実施予定へ表示">📅翌日も<small>／</small>⭐優先<br><small>／N日後</small></th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+    <button class="add-row-btn" id="addMockRow">＋ 行を追加</button>
+    <div class="hint">模試・ステップアップ模試・直前まとめ（直前チェック）など、まとめ系の記録をここに分けて管理します。列構成・連動は追加記録と同じ。「保存」でJSONに含まれます。</div>
+  </div>
+
+  <div class="sec-head" style="margin-top:18px">
+    <h2>⚪ 守り維持（P4・深追い禁止／頻出だけ）</h2>
+  </div>
+  <div class="legend">
+    <span><i class="band b-P4"></i>P4 守り維持（深追い禁止）</span>
+    <span style="font-size:.78rem;color:var(--sub)">中小・財務の守り。広げず頻出・×だけ潰す</span>
+  </div>
+  <div class="tasks-scroll">
+    <table id="p4-tasks"><thead><tr>
+      <th>#</th><th style="width:160px">論点</th><th>科目</th><th style="width:72px">確認○△×</th><th style="min-width:200px">コメント</th><th>状態</th><th style="width:130px">📁 ファイル</th><th>✓本日<br>実施</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="sec-head" style="margin-top:18px">
+    <h2>✅ 仕上済（維持・直前確認のみ）</h2>
+  </div>
+  <div class="legend">
+    <span><i class="band b-OK"></i>仕上済</span>
+    <span style="font-size:.78rem;color:var(--sub)">○率高・原則やらない。直前に確認するだけ</span>
+  </div>
+  <div class="tasks-scroll">
+    <table id="ok-tasks"><thead><tr>
+      <th>#</th><th style="width:160px">論点</th><th>科目</th><th style="width:72px">確認○△×</th><th style="min-width:200px">コメント</th><th>状態</th><th style="width:130px">📁 ファイル</th><th>✓本日<br>実施</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="sec-head" style="margin-top:18px">
+    <h2>📘 経済学・経済政策（別枠）ノート整備タスク</h2>
+  </div>
+  <div class="legend">
+    <span><i class="band b-EC"></i>経済学別枠</span>
+    <span style="font-size:.78rem;color:var(--sub)">ノート作成→確認システム登録を並行進行</span>
+  </div>
+  <div class="tasks-scroll">
+    <table id="ec-tasks"><thead><tr>
+      <th>#</th><th style="width:160px">論点</th><th style="width:54px" title="前日に「翌日も予定」をチェックした行は翌日ここに自動でチェックが入ります">⭐本日<br>推奨</th><th>科目</th><th style="width:72px">確認○△×</th><th style="min-width:200px">コメント</th><th>状態</th><th style="width:130px">📁 ファイル</th><th>✓本日<br>実施</th><th style="width:118px" title="📅翌日も＝翌日も続けてやる（翌日『⭐本日推奨』に自動ON）／⭐優先＝明日これを優先（本日の実施予定の先頭に強調表示）／N日後＝入力した日数後の当日だけ実施予定へ表示">📅翌日も<small>／</small>⭐優先<br><small>／N日後</small></th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="prob-rec">
+    <label>🧩 問題実行</label>
+    <div class="tasks-scroll" style="border-color:#6ee7b7">
+      <table id="problem-tasks"><thead><tr>
+        <th>論点・ファイル</th><th style="width:54px" title="前日に「翌日も予定」をチェックした行は翌日ここに自動でチェックが入ります">⭐本日<br>推奨</th><th style="width:80px">科目</th><th style="width:90px">確認○△×</th><th style="min-width:200px">コメント</th><th>状態</th><th style="width:130px">📁 ファイル</th><th>✓本日<br>実施</th><th style="width:118px" title="📅翌日も＝翌日も続けてやる（翌日『⭐本日推奨』に自動ON）／⭐優先＝明日これを優先（本日の実施予定の先頭に強調表示）／N日後＝入力した日数後の当日だけ実施予定へ表示">📅翌日も<small>／</small>⭐優先<br><small>／N日後</small></th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+    <button class="add-row-btn" id="addProblemRow">＋ 行を追加</button>
+    <div class="hint">確認システムでの問題実行・別ファイル受験を記録。⭐推奨にチェック→実施→結果を記入。「保存」でJSONに含まれます。</div>
+  </div>
+
+  <h2>📝 全体メモ・質問</h2>
+  <div class="panel">
+    <textarea id="memo" placeholder="行に紐づかない全体メモ・質問を記入。&#10;例）今週は法務に集中したい／経済のノートどこから？"></textarea>
+    <div class="btns">
+      <button id="clearBtn">全体メモをクリア</button>
+    </div>
+    <div class="hint">行メモ・全体メモとも、上の <b>「💾 メモをファイルに保存」</b> でファイルに書き出されます。</div>
+  </div>
+
+  <h2>📈 全体サマリ</h2>
+  <div class="summary" id="summary"></div>
+
+  <h2>科目別 進捗（優先順）</h2>
+  <div class="cards" id="cards"></div>
+
+  <div class="table-bar" style="margin-top:18px">
+    <span class="hint">記入が終わったら忘れず保存 → チャットで「更新」。</span>
+    <button class="js-pickdir">📁 保存先フォルダを選ぶ</button>
+    <button class="primary js-save">💾 メモをファイルに保存</button>
+  </div>
+
+  <h2 style="margin-top:24px">📊 学習実行の推移（記録開始からの日別実績）</h2>
+  <div class="panel chart-panel">
+    <div id="chart-legend" class="chart-legend"></div>
+    <div id="chart-area" class="chart-area"></div>
+    <div class="chart-note">各日の棒は「その日に手を付けた論点・確認の<b>件数</b>」を科目別に積み上げたもの。色は下の凡例に対応。</div>
+  </div>
+
+  <h2 style="margin-top:24px">🗒 やることメモ</h2>
+  <div class="panel">
+    <!-- 履歴：更新時に私が日付つきHTMLブロックを上へ追記（新しい順） -->
+    <div id="todo-log"></div>
+    <!-- 新規入力（自由記入・自動保存）。更新時にここの内容を履歴へ取り込む -->
+    <textarea id="todo-memo" style="min-height:130px" placeholder="やること・TODOを自由に記入（ページ下部に常駐・自動保存）。&#10;例）&#10;・生産統制＋スケジューリングの苦手復習ノート作成&#10;・法務（特許/組織再編/民法）の確認テスト→○率測定&#10;・経済 乗数効果ノート作成"></textarea>
+    <div class="btns">
+      <button id="todoClearBtn">入力欄をクリア</button>
+    </div>
+    <div class="hint">入力は<u>この端末に自動保存</u>（リロードしても残る）。<b>「💾 メモをファイルに保存」</b>に <code>やることメモ</code> として含まれ、チャットで<b>「更新」</b>と言うと<u>その内容を日付つきで上の履歴へ追記</u>します（積み上げ式）。</div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<!-- ============================================================== -->
+<!-- ★★★ データ部：更新はここだけ書き換える（表示は自動再描画）★★★ -->
+<!-- ============================================================== -->
+<script>
+const DATA = {
+  updated: "2026-07-11",
+  // 🗒 やることメモ履歴：更新時に {date, html} を先頭(新しい順)へ追記していく
+  todoLog: [],
+  examDate: "2026-08-01",   // 令和8年度1次 1日目（8/1・2の2日間）
+  passLine: 420,
+  // 「更新」のたびに私が最新状況で書き換える（状況ヘッドライン＋具体アクション）
+  nextNote: "🏁 <b>残り21日・直前講座フェーズ</b>。直前ノートの穴埋め（クイズ＋fill-blank）で7科目を総ざらい中（達成389→736・+347問）。直近で<b>企業経営①経営戦略論（技術戦略63%/VRIO・競争戦略/CSR）・情報 基盤＆NWセキュリティ（セキュリティ62%/DB・SQL/ソフトウェア/メモリ/性能信頼性/ネットワーク/プログラム言語）・財務ファイナンス（リスクリターン54%/MM理論46%/損益分岐点/株価指標38%）・運営（生産管理IE56%/在庫管理36%）・中小①経営編（動向60%）</b>が前進。次は①<b>50%超えの論点を確認テストで○率へ転換</b>、②<b>法務の飛ばしS（組織再編/相続）・情報のOS/記憶装置</b>の底上げ、③<b>経済の追加練習5本（AD-AS/フィリップス/マンデル=フレミング/外部不経済/需給ギャップ）を一巡</b>。",
+  nextActions: [
+    { tag:"📖法務", body:"<b>⑤組織再編（飛ばしS）：分割・株式交換まで読了→確認テスト急務</b>。⑥相続残り論点（8以降）を読了→確認へ。直前まとめ1〜3の弱点をそのまま継続" },
+    { tag:"📝情報", body:"<b>②TCP/IP（△17）：サブネット/NAPT/ARP/TCP-UDPを潰して再テスト</b>→○率を上げる。④脅威対策（×3）も再テストで×→○化" },
+    { tag:"🔁財務", body:"<b>MM理論（qz_33）穴埋め完了→第1命題（資本構成無関係）・第2命題（株主期待収益率）の理屈を固める</b>。苦手復習_102_02（ポートフォリオ・経営分析）実施" },
+    { tag:"📝企業経営A", body:"<b>qz_21_苦手（ベンチャー）の確認テスト</b>（積み残し）。直前チェック②③（組織人的資源・マーケティング）継続" },
+    { tag:"📘運営", body:"<b>SLP×2（P→Q→R→S手順・アクティビティ相互関係表・近接性記号）の潰し込み</b>。在庫管理△8×2の公式（発注点・安全在庫・EOQ）再確認" },
+    { tag:"📘直前", body:"<b>中小直前①〜③（qz_48-50）・法務st模試・経済qz_all継続</b>。企業経営直前③（消費者行動）残り" }
+  ],
+
+  subjects: [
+    { rank:1, code:"103", name:"企業経営理論", role:"◎得点源・最重量", target:75, depth:"S＋A＋B上位",
+      progress:41, maru:45,
+      s:"Sティア9論点 一巡完了（全🔁）／直前②組織・人的資源で総ざらい", a:"A9論点＋B上位3を展開（採用教育✅化／経営計画BSC・ベンチャー・CSR・国際経営は苦手復習ノート個別化済→📝テスト待ち／構造設計・動機づけ学習中）",
+      review:"苦手復習 01〜04＋A論点個別ノート（国際経営/CSR/ベンチャー/経営計画BSC）", note:"○率も低く伸びしろ最大。目標75=S＋A全体＋B上位まで。直前講座(qz_35-37)で総ざらい可" },
+    { rank:2, code:"106", name:"経営情報システム", role:"◎得点源・コスパ最強", target:70, depth:"S＋A全体",
+      progress:45, maru:63,
+      s:"S①〜⑤＋⑦⑧ 実施（⑥クラウドskip）／直前③開発・トレンドで総ざらい", a:"A7論点を確認テスト実施(6/14)：データ基盤79%/IoT61%/PM54%/DB46%/Web39%/OS29%/記憶29%。OS・記憶・Webが要学習",
+      review:"苦手復習 01・02（情報A 7論点を復習キューに記録済）", note:"A論点は誤答ほぼ無も△多く知識が浅い。OS・記憶装置は論点丸ごと未定着。目標70=S＋A全体" },
+    { rank:3, code:"105", name:"経営法務", role:"○得点源", target:65, depth:"S＋A全体",
+      progress:33, maru:82,
+      s:"S④機関設計のみ実施。②商標・⑥b民法 作成済（未受験）／直前①知財（特許/商標/侵害）で総ざらい", a:"A6論点を展開（著作権/各法比較/株式/経済法/国際契約/意匠）著作権のみ作成済",
+      review:"苦手復習 01・01b・02・03", note:"○率は高いが母数1論点。飛ばしSの穴が最大リスク。目標65=S＋A全体" },
+    { rank:4, code:"104", name:"運営管理", role:"○堅実", target:70, depth:"S＋A全体",
+      progress:32, maru:53,
+      s:"Sティア9論点 完走（全🔁）／直前①生産管理編で総ざらい", a:"A13論点を一巡確認(6/15)：学習済み7論点は全🔁(×は計4問のみ＝確信不足の△主体)。計算系(ライン編成★/需要予測★/設備保全MTBF)は強い。未学習6論点(陳列/店舗L/PERT/販促/QC/EDI本体)はインプット要。最弱=生産統制・スケジューリング",
+      review:"苦手復習 01・02（次:生産統制＋スケジューリングを苦手復習化）", note:"②在庫・⑨SLP・生産統制・スケジューリングが弱点。A未学習6論点はインプット先行。目標70=S＋A全体" },
+    { rank:5, code:"107", name:"中小企業経営・政策", role:"⚠難化・守り", target:60, depth:"S＋A前半（深追い禁止）",
+      progress:35, maru:46,
+      s:"S①③④⑤ 一巡（②振興法skip）", a:"A前半4論点を展開（経営革新/承継M&A/業績/賃金）未着手",
+      review:"苦手復習 01＋直前講座 qz_48経営編・qz_49政策編Ⅰ・qz_50政策編Ⅱ", note:"今年最難化予想。足切り回避が至上命題。目標60=S＋A前半まで（深追い禁止）。直前講座(qz_48-50)で頻出総ざらい" },
+    { rank:6, code:"102", name:"財務・会計", role:"△守り・最完成", target:60, depth:"S＋A前半",
+      progress:54, maru:58,
+      s:"S①〜⑧ 完走（⑦デリバティブskip）", a:"A前半3論点を展開（CF計算書/連結/純資産）未着手",
+      review:"苦手復習 01b・02・03・04", note:"S完成度は最高／⑤企業価値評価が最弱。目標60=S＋A前半まで" },
+    { rank:"別", code:"101", name:"経済学・経済政策", role:"△守り・別トラック", target:55, depth:"Sを固める",
+      progress:25, maru:null, alt:true,
+      s:"qz_21生産者理論（限界代替率まで）・qz_22消費者理論（過去問例題付）・qz_23市場の効率性 作成済／IS-LM(qz_020)あり。直前統合版を前半/後半に2分割＋練習問題5本（AD-AS/フィリップス/マンデル=フレミング/外部不経済/需給ギャップ）追加。確認システム未登録。", a:"乗数効果・マンデル＝フレミング・需要弾力性・余剰分析 未作成",
+      review:"なし", note:"ノート整備が本格化（6/13時点4本）。次の最優先：乗数効果ノート作成→確認システム登録" }
+  ],
+
+  tasks: [
+    // 🔴 P1 底の穴（未着手・足切り/下振れリスク筆頭）※経済学は別枠（科目カード参照）
+    {r:1, band:"P1", topic:"①特許（飛ばしS）", subj:"法務", res:"📖学習中", reason:"飛ばしSの穴・取的法改正で今年必出"},
+    {r:2, band:"P1", topic:"③不正競争防止法（飛ばしS）", subj:"法務", res:"📖学習中", reason:"飛ばしSの穴・混同惹起頻出"},
+    {r:13, band:"P1", topic:"⑤組織再編（飛ばしS）", subj:"法務", res:"📖学習中（合併まで）", reason:"飛ばしSの穴・会社法の柱"},
+    {r:20, band:"P1", topic:"⑥a相続（飛ばしS）", subj:"法務", res:"📖学習中", reason:"飛ばしSの穴・読んで覚え先行"},
+    // 🟠 P2 底上げ（S済だが△多く底が浅い）
+    {r:3, band:"P2", topic:"①トランザクション", subj:"情報", res:"○9 △17 ×2", reason:"△17＝全科目最弱級・得点源"},
+    {r:4, band:"P2", topic:"②TCP/IP", subj:"情報", res:"○10 △17 ×1", reason:"△17・DB/NW基礎・得点源"},
+    {r:11, band:"P2", topic:"④脅威対策", subj:"情報", res:"○16 △9 ×3", reason:"×3・防御技術の役割"},
+    {r:5, band:"P2", topic:"構造設計", subj:"企業経営", res:"○3 △11 ×0", reason:"△11＝伸びしろ最大・得点源最重量"},
+    {r:6, band:"P2", topic:"RBV/VRIO", subj:"企業経営", res:"○2 △5 ×1", reason:"○2＝最弱・頻出"},
+    {r:7, band:"P2", topic:"ファイブフォース", subj:"企業経営", res:"○3 △5 ×0", reason:"確信不足・頻出"},
+    {r:9, band:"P2", topic:"意思決定", subj:"企業経営", res:"○3 △4 ×1", reason:"△多・得点源"},
+    {r:10, band:"P2", topic:"労働基準法", subj:"企業経営", res:"✅ ○13△0×1（6/14・改善）", reason:"残×1=労災保険料は全額事業主負担", state:"✅済"},
+    {r:19, band:"P2", topic:"アンゾフ多角化", subj:"企業経営", res:"✅ ○14△0×0（6/14・全問クリア）", reason:"型・垂直統合方向・関連多角化を克服", state:"✅済"},
+    {r:15, band:"P2", topic:"②在庫管理", subj:"運営", res:"○5 △8 ×2", reason:"公式群が最弱・×2"},
+    {r:16, band:"P2", topic:"⑨レイアウトSLP", subj:"運営", res:"○5 △7 ×2", reason:"手順・用語ほぼ未定着・×2"},
+    {r:18, band:"P2", topic:"⑧生産合理化", subj:"運営", res:"○7 △6 ×1", reason:"平準化の逆理解"},
+    {r:14, band:"P2", topic:"②商標（苦手復習2回目確認済）", subj:"法務", res:"🔁 △10 ×3→苦手復習中", reason:"S相当・15号/類否判断が最弱"},
+    // 🟡 P3 上積み（得点源の必要範囲＝目標点到達まで・底固め後）
+    // ── 企業経営75：Aティア全体（9論点・構造設計はP2で進行中）＋B上位3 ──
+    {r:41, band:"P3", topic:"A 動機づけ理論", subj:"企業経営", res:"📖学習中（○8△5×1）", reason:"A・期待理論/ERG/アンダーマイニング"},
+    {r:42, band:"P3", topic:"A 採用・教育訓練", subj:"企業経営", res:"✅ ○13△0×1（6/14・改善）", reason:"A・残×1=OJTの長所（個別ペース指導）", state:"✅済"},
+    {r:43, band:"P3", topic:"A 経営計画・BSC", subj:"企業経営", res:"📝テスト待ち（苦手復習ノート個別化 qz_22）", reason:"A・スコア150・必修", state:"📝テスト待ち"},
+    {r:44, band:"P3", topic:"A R&D・製品開発", subj:"企業経営", res:"未着手", reason:"A・スコア150・必修"},
+    {r:45, band:"P3", topic:"A ベンチャー・中小企業戦略", subj:"企業経営", res:"📝テスト待ち（苦手復習ノート個別化 qz_21）", reason:"A・スコア145", state:"📝テスト待ち"},
+    {r:46, band:"P3", topic:"A CSR・ステークホルダー", subj:"企業経営", res:"📝テスト待ち（苦手復習ノート個別化 qz_20）", reason:"A・スコア135", state:"📝テスト待ち"},
+    {r:47, band:"P3", topic:"A 人事制度・評価・賃金", subj:"企業経営", res:"未着手", reason:"A・スコア130"},
+    {r:48, band:"P3", topic:"A 購買意思決定（消費者行動）", subj:"企業経営", res:"📖学習中", reason:"A・スコア130"},
+    {r:49, band:"P3", topic:"B上位 国際経営", subj:"企業経営", res:"📝テスト待ち（苦手復習ノート個別化 qz_20）", reason:"B上位・スコア115・目標75の上積み", state:"📝テスト待ち"},
+    {r:50, band:"P3", topic:"B上位 ブランド戦略", subj:"企業経営", res:"未着手", reason:"B上位・スコア115"},
+    {r:51, band:"P3", topic:"B上位 セグメンテーション", subj:"企業経営", res:"✅済", reason:"B上位・スコア105", state:"✅済"},
+    // ── 情報70：Aティア全体（7論点） ──
+    {r:52, band:"P3", topic:"A データ分析基盤", subj:"情報", res:"🔁 ○22△5×1（6/14・79%）DWH性質のみ要再訪", reason:"A・スコア130・ほぼ仕上→直前確認のみ", state:"🔁要再訪"},
+    {r:53, band:"P3", topic:"A IoT・先端技術", subj:"情報", res:"🔁 ○17△10×1（6/14・61%）通信/構成要素が弱い", reason:"A・スコア115・1〜2周で伸びる", state:"🔁要再訪"},
+    {r:54, band:"P3", topic:"A OS", subj:"情報", res:"⚠ ○8△20×0（6/14・29%）論点全体が未定着", reason:"A・スコア110・要学習（最大の穴）", state:"🔁要再訪"},
+    {r:55, band:"P3", topic:"A Web技術", subj:"情報", res:"⚠ ○11△15×2（6/14・39%）基本概念が浅い", reason:"A・スコア110・要学習", state:"🔁要再訪"},
+    {r:56, band:"P3", topic:"A プロジェクト管理", subj:"情報", res:"🔁 ○15△13×0（6/14・54%）EVM計算/PERTが穴", reason:"A・スコア110・1〜2周で伸びる", state:"🔁要再訪"},
+    {r:57, band:"P3", topic:"A 記憶装置", subj:"情報", res:"⚠ ○8△20×0（6/14・29%）論点全体が未定着", reason:"A・スコア90・要学習（最大の穴）", state:"🔁要再訪"},
+    {r:58, band:"P3", topic:"A データベース設計", subj:"情報", res:"🔁 ○13△15×0（6/14・46%）正規化目的/関係演算が穴", reason:"A・スコア80・1〜2周で伸びる", state:"🔁要再訪"},
+    // ── 運営70：Aティア全体（13論点・★=計算） ──
+    {r:59, band:"P3", topic:"A ディスプレイ（陳列・VMD）", subj:"運営", res:"📘未学習（テスト除外）", reason:"A・フェイシング/ゴールデンゾーン。スコア105＝運営A最頻出。インプット最優先", state:"📘未学習"},
+    {r:60, band:"P3", topic:"A 売場の統計・販売分析", subj:"運営", res:"🔁 ○6△6×0（6/15・要再訪）", reason:"×0＝確信不足。PI値(=1000人あたり・坪効率と別)・売上分解3式が△塊", state:"🔁要再訪"},
+    {r:61, band:"P3", topic:"A ライン編成効率★", subj:"運営", res:"🔁 ○11△0×1（6/15・ほぼ✅）", reason:"計算は全○。×=編成効率↑で産出↑の誤解(正:工数が減る)", state:"🔁要再訪"},
+    {r:62, band:"P3", topic:"A 需要予測★", subj:"運営", res:"🔁 ○10△2×0（6/15・ほぼ✅）", reason:"計算は全○。△=適用条件(トレンドのラグ/単純指数平滑=水平向き)のみ", state:"🔁要再訪"},
+    {r:63, band:"P3", topic:"A 生産統制（進捗/現品/余力）", subj:"運営", res:"🔁 ○5△7×0（6/15・最弱）", reason:"×0だが用語全般未定着(差立て/カムアップ/余力/製造三角図)。苦手復習化候補", state:"🔁要再訪"},
+    {r:64, band:"P3", topic:"A 店舗レイアウト（動線・通路）", subj:"運営", res:"📘未学習（テスト除外）", reason:"A・ワンウェイ動線/主通路。インプット後にテスト", state:"📘未学習"},
+    {r:65, band:"P3", topic:"A プロジェクト管理（PERT/CPM）★", subj:"運営", res:"📘未学習（テスト除外）", reason:"A・クリティカルパス/最早最遅。インプット後にテスト", state:"📘未学習"},
+    {r:66, band:"P3", topic:"A スケジューリング（ジョンソン法）★", subj:"運営", res:"🔁 ○3△8×1（6/15・最弱級）", reason:"論点全般未定着。ジョンソン法の手順・ディスパッチング(SPT/EDD/FCFS)が穴。苦手復習化候補", state:"🔁要再訪"},
+    {r:67, band:"P3", topic:"A 販売促進", subj:"運営", res:"📘未学習（テスト除外）", reason:"A・プレミアム/FSP/販促手法。インプット後にテスト", state:"📘未学習"},
+    {r:68, band:"P3", topic:"A 設備保全★", subj:"運営", res:"🔁 ○5△7×0（6/15・ほぼ✅寄り）", reason:"MTBF/MTTR/可用率の計算は全○。△=保全方式の分類体系(BM/PM=TBM+CBM/CM/MP)・TPM・バスタブ曲線", state:"🔁要再訪"},
+    {r:69, band:"P3", topic:"A 管理指標（生産性・歩留り）", subj:"運営", res:"🔁 ○5△6×1（6/15・要再訪）", reason:"各指標定義が△塊。最重要=可動率vs稼働率の区別。×=歩留り定義", state:"🔁要再訪"},
+    {r:70, band:"P3", topic:"A QC手法（QC7つ道具）", subj:"運営", res:"📘未学習（テスト除外）", reason:"A・特性要因図/パレート/管理図。インプット後にテスト", state:"📘未学習"},
+    {r:71, band:"P3", topic:"A EDI・流通情報システム", subj:"運営", res:"📘実質未学習 ○1△11×0（6/15）", reason:"○は商品コード(GS1/JAN/GTIN)のみ＝既習。EDI本体(流通BMS/EOS/SCM/JCA/CRP/VMI)はインプット必要", state:"📘未学習"},
+    // ── 法務65：Aティア全体（6論点） ──
+    {r:72, band:"P3", topic:"A 著作権法", subj:"法務", res:"作成済・未受験", reason:"A・支分権/保護期間/職務著作", state:"📖学習中"},
+    {r:73, band:"P3", topic:"A 各法比較（産業財産権4法）", subj:"法務", res:"未着手", reason:"A・特許/実用新案/意匠/商標の横断"},
+    {r:74, band:"P3", topic:"A 株式（会社法）", subj:"法務", res:"未着手", reason:"A・種類株式/譲渡制限/募集"},
+    {r:75, band:"P3", topic:"A 経済法（独占禁止法）", subj:"法務", res:"未着手", reason:"A・私的独占/不当な取引制限/不公正"},
+    {r:76, band:"P3", topic:"A 国際契約条項", subj:"法務", res:"未着手", reason:"A・準拠法/仲裁/インコタームズ"},
+    {r:77, band:"P3", topic:"A 意匠法", subj:"法務", res:"未着手", reason:"A・登録要件/関連意匠/存続期間"},
+    // ⚪ P4 守り維持（深追い禁止・頻出だけ）
+    {r:23, band:"P4", topic:"④金融支援", subj:"中小", res:"○8 △19 ×1", reason:"難化・守り。頻出数値だけ"},
+    {r:24, band:"P4", topic:"⑤支援機関", subj:"中小", res:"○9 △19 ×0", reason:"守り・頻出だけ"},
+    {r:25, band:"P4", topic:"③統計", subj:"中小", res:"○12 △15 ×1", reason:"守り・白書頻出数値だけ"},
+    {r:21, band:"P4", topic:"⑤企業価値評価", subj:"財務", res:"○4 △9 ×2", reason:"守り・A前半まで（深追い禁止）"},
+    {r:22, band:"P4", topic:"⑧CVP", subj:"財務", res:"○7 △5 ×3", reason:"守り・×3だけ潰す"},
+    // ── 守りA前半（中小60・財務60＝深追い禁止・上位だけ）──
+    {r:78, band:"P4", topic:"A前半 経営革新・新事業支援", subj:"中小", res:"未着手", reason:"守りA前半・経営革新計画/農商工連携(スコア300)"},
+    {r:79, band:"P4", topic:"A前半 開廃業・事業承継・M&A", subj:"中小", res:"未着手", reason:"守りA前半・開廃業率/事業承継税制(スコア260)"},
+    {r:80, band:"P4", topic:"A前半 業績・売上高収益性", subj:"中小", res:"未着手", reason:"守りA前半・経常利益率/価格転嫁(スコア220)"},
+    {r:81, band:"P4", topic:"A前半 賃金・雇用・労働生産性", subj:"中小", res:"未着手", reason:"守りA前半・労働分配率/生産性格差(スコア220)"},
+    {r:82, band:"P4", topic:"A前半 CF計算書", subj:"財務", res:"未着手", reason:"守りA前半・スコア115"},
+    {r:83, band:"P4", topic:"A前半 連結会計（のれん・持分法）", subj:"財務", res:"未着手", reason:"守りA前半・スコア105"},
+    {r:84, band:"P4", topic:"A前半 純資産会計（配当・準備金）", subj:"財務", res:"未着手", reason:"守りA前半・スコア85"},
+    // ✅ 仕上済（維持・直前確認のみ）
+    {r:26, band:"OK", topic:"③機械学習/⑤暗号/⑦統計/⑧SQL", subj:"情報", res:"○率高", reason:"仕上がり済・直前確認のみ"},
+    {r:27, band:"OK", topic:"②投資評価/④経営分析", subj:"財務", res:"○率高", reason:"維持のみ"},
+    {r:28, band:"OK", topic:"③計数管理", subj:"運営", res:"○13 △1 ×1", reason:"ほぼ✅・維持"},
+    // 📘 インプット先行（未学習・別トラック）
+    {r:29, band:"IN", topic:"④物流・⑥商品コード", subj:"運営", res:"未学習", reason:"インプット先行・別トラック"},
+    {r:30, band:"IN", topic:"⑥クラウド／⑦デリバティブ", subj:"情報/財務", res:"未学習", reason:"インプット先行・別トラック"},
+    // 🟣 経済学・別枠（ノート作成→確認システム登録を並行進行）
+    {r:31, band:"EC", topic:"乗数効果・乗数理論", subj:"経済", res:"ノート未作成", reason:"出題頻度最高・別枠最優先"},
+    {r:32, band:"EC", topic:"マンデル＝フレミング", subj:"経済", res:"ノート未作成", reason:"開放経済の柱・頻出"},
+    {r:33, band:"EC", topic:"需要弾力性", subj:"経済", res:"📖ノート作成済（qz_30・所得/代替効果・労働供給含む）", reason:"応用計算頻出"},
+    {r:34, band:"EC", topic:"余剰分析・課税・関税", subj:"経済", res:"ノート未作成", reason:"グラフ読取頻出"},
+    {r:35, band:"EC", topic:"生産者理論（qz_21）", subj:"経済", res:"📖作成中（限界代替率まで）", reason:"費用関数・利潤最大化・供給曲線"},
+    {r:36, band:"EC", topic:"消費者理論（qz_22）", subj:"経済", res:"📖ノート作成済（過去問例題付）", reason:"効用最大化・スルツキー・無差別曲線"},
+    {r:37, band:"EC", topic:"市場の効率性（qz_23）", subj:"経済", res:"📖ノート作成済", reason:"完全競争・独占・余剰厚生損失"},
+    {r:38, band:"EC", topic:"IS-LM分析（qz_020）", subj:"経済", res:"📖ノートあり（未確認）", reason:"財政金融政策・クラウディングアウト"},
+    // 🟣 直前_練習問題（7/7追加・グラフ系の即戦力アウトプット）
+    {r:39, band:"EC", topic:"AD-AS曲線（直前練習）", subj:"経済", res:"⬜未着手", reason:"直前練習・グラフ読取／総需要総供給の頻出"},
+    {r:40, band:"EC", topic:"フィリップス曲線（直前練習）", subj:"経済", res:"⬜未着手", reason:"直前練習・失業とインフレのトレードオフ"},
+    {r:41, band:"EC", topic:"マンデル=フレミング（直前練習）", subj:"経済", res:"⬜未着手", reason:"直前練習・開放経済の柱・頻出"},
+    {r:42, band:"EC", topic:"外部不経済（直前練習）", subj:"経済", res:"⬜未着手", reason:"直前練習・ピグー税/余剰分析"},
+    {r:43, band:"EC", topic:"需給ギャップ（直前練習）", subj:"経済", res:"⬜未着手", reason:"直前練習・GDPギャップ/景気判断"}
+  ],
+
+  // --- 記録済みログ（私が会話の報告を受けて追記。新しい順）---
+  logs: [
+    { date:"2026-07-11", subj:"運営・情報・企業経営・財務・法務・中小", body:"📝 <b>直前ノートで6科目（運営・情報・企業経営・財務・法務・中小）を幅広く前進（達成653→736・+83問）</b>。【運営】直前①生産管理（qz_40）：<b>⑤在庫管理（0→36%・ｸ+15）</b>＝発注方式・EOQ・安全在庫の穴埋め着手。【情報】直前①基盤（qz_45）：<b>⑤性能・信頼性（0→10%）・⑥ネットワーク（0→25%）・⑬プログラム言語（0→23%）・⑫設計開発テスト（0→6%）・②入出力IF（2→16%）</b>。【企業経営】<b>⑦CSR・FB（0→24%）・②ブランディング（0→9%）</b>。【財務】<b>②株価指標（PER/PBR/配当利回り 0→38%・ｸ+13穴+2）</b>。【法務】<b>②設立（会社設立手続 0→7%）</b>着手。【中小】<b>⑦税制（0→19%）・⑨経営基盤の強化（0→7%）・⑧組合（0→33%）</b>着手。",
+      advice:"運営⑤在庫管理は従来の弱点（○5△8×2）＝<b>発注点・安全在庫・EOQの公式</b>を穴埋めで固め、読了後に確認テストで△8×2を潰す。情報は基盤（性能信頼性/ネットワーク）を着手＝応答時間/スループット/稼働率(MTBF/MTTR)/RAID・TCP/IP/サブネットを継続。" },
+    { date:"2026-07-10", subj:"情報・法務", body:"📝 <b>直前ノートで情報①基盤＋法務を前進（クラウド保存→進捗ダッシュボードに反映・達成592→625・+33問）</b>。【情報】直前①基盤編（qz_45）：<b>③ソフトウェア（0→34%・ｸ+7穴+3）・①メモリ（0→15%・ｸ+6穴+1）</b>、直前③開発トレンド（qz_47）：<b>⑭Webアプリ（0→26%・ｸ+6穴+2）</b>。【法務】直前①知財（qz_31）：<b>⑥不正競争防止法等（0→9%・ｸ+1穴+5）</b>、直前②会社法（qz_32）：<b>③株式（0→3%・ｸ+2）</b>。",
+      advice:"情報は基盤（ソフトウェア/メモリ/Webアプリ）の穴埋め着手で最弱のOS・記憶装置系の底上げが始まった。メモリ15%はまだ低いので継続。法務は不競法・株式が0%付近＝<b>飛ばしS/A論点の初回インプット段階</b>。読了後に確認テストで○率測定へ。" },
+    { date:"2026-07-09", subj:"企業経営・中小・情報・財務・運営", body:"📝 <b>直前ノートを一気に進めた日（達成389→592・+203問）</b>。【企業経営】直前①経営戦略論（qz_35）：<b>⑤技術戦略（0→63%・ｸ+13穴+11）・④競争戦略（0→32%・ｸ+8穴+5）・①VRIO（0→33%・ｸ+7穴+5）</b>。【中小】直前①経営編（qz_48）：<b>③動向（16→60%・ｸ+18穴+2）</b>。【情報】直前②NW・セキュリティ（qz_46）：<b>⑧セキュリティ（7→62%・ｸ+16穴+7）</b>、直前①基盤（qz_45）：<b>④DB・SQL（22→41%・ｸ+8）</b>。【財務】直前③ファイナンス（qz_03）：<b>①MM理論（5→46%・ｸ+16穴+1）・④配当割引モデル（0→13%・ｸ+4）</b>、直前②経営分析投資評価（qz_02）：<b>②損益分岐点（19→43%・ｸ+9穴+1）・⑤リスクとリターン（0→54%・ｸ+18穴+4）</b>。【運営】直前①生産管理（qz_40）：<b>⑥IE（0→56%・ｸ+13穴+9）</b>。",
+      advice:"直前ノートの穴埋め（クイズ＋fill-blank固定）で広範囲を一気に前進。特に<b>技術戦略63%・セキュリティ62%・IE56%・リスクリターン54%</b>は半分超え。<b>VRIO・競争戦略・MM理論・DB・SQL・損益分岐点</b>は32〜46%で伸ばし中。次は50%超えの論点を確認テストで○率へ転換。" },
+    { date:"2026-07-07", subj:"経済・運営・法務・企業経営・情報", body:"🏁 <b>直前講座フェーズ本格化の日</b>。【経済】直前統合版を<b>前半（ミクロ＋国民経済計算）/後半（マクロ以降）に2分割</b>して継続。さらに<b>AD-AS・フィリップス曲線・マンデル=フレミング・外部不経済・需給ギャップの練習問題5本</b>を追加（いずれも⭐本日推奨・未着手）。【運営】<b>直前①生産管理編（qz_40）</b>。【法務】<b>直前①知的財産法（qz_31・特許/商標/侵害）</b>。【企業経営】<b>直前②組織・人的資源（qz_36・組織構造/モチベーション）</b>。【情報】<b>直前③開発・トレンド（qz_47・情報システムの種類/近年IT）</b>。",
+      advice:"残り24日、<b>直前講座での総ざらいフェーズ</b>に入った。①経済は追加した練習5本（グラフ系）を早めに一巡して得点源化。②<b>法務の飛ばしS（⑤組織再編・⑥相続）の読了→確認テスト</b>が依然として最大の穴＝ここを最優先で潰す。③情報②TCP/IP（△17）・企業経営A（構造設計/VRIO）の△潰しを並行。直前①〜③（運営②品質店舗物流／経済②③）の未着手分を早めに一巡させて穴を無くす。" },
+    { date:"2026-06-29", subj:"法務・運営・財務・企業経営・経済・中小", body:"📖📝 <b>法務直前3本＋運営SLP2周目＋財務MM理論の日</b>。【法務】<b>直前まとめ3本連続：qz_31（知的財産法）・qz_32（会社法）・qz_33（民法・その他）</b>を実施。⑥a相続（飛ばしS）論点5〜7継続。【運営】<b>⑨SLP 苦手復習_104_04（S2周目）：○5△7×2</b>（手順・アクティビティ関係・近接性が未定着）。在庫・物流（苦手復習_104_03）・物流センター計算問題も実施。【財務】<b>MM理論（qz_33）</b>学習開始・直前_財務会計③実施。【企業経営】qz_20_1（M&A・国際経営・CSR/ESG）✅済。qz_20_苦手（CSR）・qz_22（経営計画・BSC）実施。【経済】qz_all直前統合版継続（等費用線）・<b>qz_34（等産出・等費用曲線）</b>実施。【中小】直前チェック1（qz_35 企業経営理論①経営戦略論）実施。",
+      advice:"法務直前3本で総ざらいが一気に進んだ。次の急務は<b>⑤組織再編（分割・株式交換）の読了→確認テスト</b>（飛ばしSの最大リスク）。⑥相続は残り論点（8以降）を読了→確認へ。運営SLPは2周目でも×2が残存→<b>P→Q→R→S手順とアクティビティ相互関係表・近接性記号</b>を集中的に潰す。財務MM理論は<b>第1命題（資本構成無関係性・WACC一定）・第2命題（負債増加→株主期待収益率上昇）</b>の理屈を固める→穴埋めで確認。企業経営はqz_21_苦手（ベンチャー）の確認テストが積み残し。" },
+    { date:"2026-06-27", subj:"財務・中小・運営・情報・経済・企業経営", body:"📖📝 <b>幅広く7科目を走った日</b>。【財務】qz_31原価計算（続き）・税効果会計・直前_財務会計①②③（3本連続）。【中小】<b>qz_02小規模企業振興基本法</b>（基本事項＋語呂確認）。【企業経営】qz_20_1（M&A・国際経営・CSR/ESG）。【運営】<b>IE_時間研究</b>・st_運営管理_模試・<b>②在庫管理（○5△8×2）</b>確認テスト。【経済】qz_all直前統合版継続・<b>等産出・等費用曲線</b>ノート実施。【情報】<b>②TCP/IP（○10△17×1）・④脅威対策（○16△9×3）</b>確認テスト。",
+      advice:"情報②TCP/IPは△17が全科目最弱級＝サブネット/NAPT/ARP/TCP-UDPを苦手復習_106_01で潰して再テストへ。④脅威対策は×3が残存→個別で確認。運営②在庫管理は△8×2が残存→発注点公式・安全在庫を重点的に。法務⑤組織再編（分割・株式交換）の読了と機関設計2回目の×1○化が急務。企業経営Aの残り3論点（CSR/ベンチャー/BSC）の確認テストも積み残し。" },
+    { date:"2026-06-26", subj:"財務・企業経営", body:"📖📝 <b>財務CVP＋企業経営A4論点を一気に回した日</b>。【財務】<b>苦手復習_102_04（CVP分析）</b>実施。<b>qz_32.税効果会計まとめ</b>：新ノート学習。【企業経営A】<b>qz_20_1（M&A・国際経営・CSR/ESG）・qz_20_苦手（CSR・ステークホルダー）・qz_21_苦手（ベンチャー・中小企業戦略）・qz_22（経営計画・BSC）</b>の4論点を実施（全て穴埋め確認込み）。",
+      advice:"企業経営A4論点はインプットを回したので、次は<b>確認テストで○率測定→×△だけ苦手復習へ</b>。財務は苦手復習_102_02（ポートフォリオ）・_102_01b（減損）が未実施。税効果会計は新ノート（qz_32）の穴埋めまで一巡を確認。法務⑤組織再編（分割・株式交換へ）・⑥相続残り・②商標の進捗確認を優先。情報TCP/IP△17の潰し込みと機関設計2回目（×1△4）の再テストも積み残し。" },
+    { date:"2026-06-25", subj:"財務・法務", body:"📖 <b>財務原価計算＋法務飛ばしS継続の日</b>。【財務】<b>qz_31.原価計算まとめ</b>：個別原価計算まで学習＋<b>直前_財務会計①（会計簿記原価編）</b>実施。【法務】<b>⑤組織再編（飛ばしS）</b>：合併まで読了・チェック問を追加（qz_28.組織再編まとめ）。<b>⑥a相続（飛ばしS）</b>：カテゴリ別(qz_29)の論点5〜7を学習。",
+      advice:"財務は原価計算（個別→総合→標準）の全体像を固めたいので<b>苦手復習_102_04（CVP分析）・_102_02（ポートフォリオ）</b>と並走させ○率を測定。法務⑤組織再編は合併→分割・株式交換の読了後に<b>確認テストで○率計測</b>。⑥相続はqz_29残り論点を読了→確認へ。企業経営Aの4論点（BSC/ベンチャー/CSR/国際経営）は確認テスト待ちが溜まっているので早めに消化。" },
+    { date:"2026-06-24", subj:"法務・情報・経済・運営", body:"📖📝 <b>飛ばしS相続＋情報修正＋模試の日</b>。【法務】<b>⑥a相続（飛ばしS）</b>：qz_24.相続まとめ → <b>qz_29.相続（カテゴリ別）まとめ</b>へ展開して学習（範囲5〜7）。【情報】<b>②TCP/IP</b>：苦手復習_106_01の<b>内容を修正</b>しつつ再確認（○10 △17 ×1＝△17が全科目最弱級）。【模試】<b>模試_経営情報・模試_運営管理</b>を実施。【経済】<b>qz_all.直前_経済学 全範囲統合版</b>📖学習開始（総ざらい・翌日も継続）。",
+      advice:"法務⑥相続はカテゴリ別(qz_29)で論点整理が進んだので、読了後<b>確認テストで○率測定</b>へ。情報②TCP/IPは<b>△17の潰し込み</b>（サブネット/NAPT/ARP/TCP-UDP）が最優先＝修正後に再テストで△→○を測る。模試2本（情報・運営）は<b>誤答論点を復習キューへ</b>。経済は直前統合版で全範囲を一気に総ざらい→弱点を拾って個別ノート/確認へ。翌日は財務_102_02/04・企業経営A(qz_20系)・中小qz_02・直前チェック群が本日推奨ON。" },
+    { date:"2026-06-22", subj:"法務・企業経営・財務・中小・経済", body:"📝📖 <b>幅広く実施した日</b>。【法務】②商標 苦手復習2回目（<b>先使用権から</b>進行）・機関設計2回目（×1△4）再確認・<b>st_経営法務 模試</b>。【企業経営】A論点の苦手ノートを実施：<b>国際経営/CSR(qz_20)・ベンチャー(qz_21)・経営計画BSC(qz_22)</b>＋直前まとめ <b>qz_35/36/37（経営戦略論）</b>。【財務】苦手復習_102_02（ポートフォリオ・経営分析）。【中小】<b>qz_02 小規模企業振興基本法</b>・直前 qz_49/50。【経済】<b>qz_30 需要弾力性・所得効果・労働供給ノート実施</b>・直前 qz_42（ミクロ前半）。",
+      advice:"企業経営A4論点（国際経営/CSR/ベンチャー/経営計画BSC）はインプットが回ったので、次は<b>確認テストで○率測定</b>→苦手だけ残す。②商標は先使用権・15号/類否を読了後に再テストで×3→○へ。経済は需要弾力性ノート(qz_30)ができたので<b>確認システム登録</b>へ。直前まとめ（経営戦略論・ミクロ前半）は総ざらいとして継続。" },
+    { date:"2026-06-21", subj:"中小・企業経営", body:"📘 <b>スタディング直前対策講座ノートを整備</b>：【中小】qz_48直前_①経営編・qz_49直前_②政策編Ⅰ・qz_50直前_③政策編Ⅱ。【企業経営】qz_35直前_①経営戦略論・qz_36直前_②組織人的資源・qz_37直前_③マーケティング。あわせて<b>企業経営A論点の苦手復習ノートを個別ファイル化</b>：国際経営(qz_20)・CSR/ステークホルダー(qz_20)・ベンチャー/中小企業戦略(qz_21)・経営計画/BSC(qz_22)。企業経営理論作成ノート(qz_01〜13)も総復習対象に設定。テストは未実施（本日推奨に集約）。",
+      advice:"直前対策講座は<b>全体総ざらい用</b>＝中小・企業経営の頻出論点を直前チェックで一気に拾える。企業経営A4論点（経営計画BSC/ベンチャー/CSR/国際経営）は個別ノート化が済んだので、次は<b>確認テストで○率測定→苦手だけ残す</b>。法務は機関設計2回目（×1△4）の再テストが本日推奨＝×1の○化を確認。財務は_102_02/04を継続。" },
+    { date:"2026-06-20", subj:"法務・企業経営・経済・財務", body:"📖 【法務】①特許（侵害救済まで読み込み継続）・③不正競争防止法（デッドコピーまで読み込み継続）・<b>⑦著作権法 qz_31📖新規開始</b>。【企業経営】A CSR・ステークホルダー📖継続・B上位 国際経営📖継続・B上位 セグメンテーション✅確認。追加実施：<b>ステップアップ模試 経済学継続・企業経営理論ノート総復習・財務会計模試継続</b>。",
+      advice:"法務は①特許（残り：審判・国際出願）・③不競法（残り：営業秘密3要件）をあと一押しで読了→2論点まとめて確認テスト。著作権法は読み込み初日なので2〜3日で支分権/保護期間/職務著作を読了→テスト待ち。企業経営A4論点（経営計画・ベンチャー・CSR・購買意思決定）はインプット済みなので<b>次セッションで確認テスト</b>に進む。ステップアップ模試（経済・財務）は翌日継続予定＝弱点論点の見直しを並行で。" },
+    { date:"2026-06-19", subj:"法務・企業経営・財務・運営・経済", body:"📖 【法務】飛ばしS4論点継続（特許/不競法/組織再編/相続）＋苦手復習②商標（△10 ×3→苦手復習継続）。【企業経営】7論点実施：A 経営計画・BSC📖・A ベンチャー📖・A CSR📖・A 購買意思決定📖継続・B上位 国際経営📖継続・<b>B上位 セグメンテーション ✅済</b>・B上位 ブランド戦略 読み込み。企業経営理論ノート総復習も実施。【財務】苦手復習_102_02（ポートフォリオ・経営分析）・_102_03（企業価値評価）・_102_04（CVP分析）3本実施＋<b>財務会計模試</b>実施。【運営】②在庫管理：<b>○5△8×2</b>継続。【経済】<b>ステップアップ模試 経済学</b>実施（翌日も継続予定）。",
+      advice:"企業経営A/B論点7本のインプットが完了した日。<b>セグメンテーション✅済</b>が最大の成果。次の優先は経営計画・BSC/ベンチャー/CSR/購買意思決定の<b>確認テスト</b>で定着確認。法務はS残り2論点（特許:存続期間/審判/国際出願・不競法:営業秘密3要件）を読了→まとめて確認テストへ。財務会計模試＋ステップアップ模試経済学は継続。" },
+    { date:"2026-06-18", subj:"法務・財務・企業経営・情報・運営・経済", body:"📖 <b>法務飛ばしS4論点継続</b>：特許（侵害救済まで）・不競法（デッドコピーまで）・組織再編（合併まで）・相続（読み込み継続）。機関設計 苦手復習_105_01b（2回目）：<b>×1△4</b>再確認。【財務】<b>苦手復習_102_01（リース・のれん・有価証券・タックスシールド）</b>実施 ＋ <b>苦手復習_102_01b（減損・投資評価）</b>実施。苦手復習_102_02〜04（ポートフォリオ・企業価値評価・CVP）は翌日推奨にセット。【企業経営】<b>A 購買意思決定（消費者行動）📖学習開始</b>。RBV/VRIO・5F・意思決定・動機づけ・構造設計を継続。B上位 国際経営 📖新規開始。【情報】②TCP/IP：<b>○10△17×1</b>・④脅威対策：<b>○16△9×3</b>確認実施。【運営】②在庫管理：<b>○5△8×2</b>継続。【経済】<b>ステップアップ模試 経済学</b>実施（翌日も継続予定）。",
+      advice:"法務残り：特許=<b>存続期間(出願日から20年)・審判・国際出願</b>、不競法=<b>営業秘密3要件(秘密管理性・有用性・非公知性)</b>→読了したら<b>2論点まとめて確認テスト</b>へ。財務は苦手復習_102_02〜04が翌日推奨ON＝連続実施で底上げ。企業経営A（購買意思決定📖）は読了後にテスト。ステップアップ模試 経済学は翌日も継続＝ノート整備と並行。" },
+    { date:"2026-06-16", subj:"法務", body:"📖 <b>飛ばしS論点のノートを集中整備</b>：<b>組織再編</b>(qz_23→qz_25・合併/チェック問)・<b>特許法</b>(qz_19＋qz_26カテゴリ別)・<b>民法</b>(qz_17物語版＋苦手復習_105_03 民法2回目)。知財・組織再編・民法の穴埋めが進行。",
+      advice:"法務は飛ばしSの穴埋めが最大リスク。ノート整備が一巡したら<b>確認システムで📝テスト</b>→○率測定で定着を確認。特に特許①・組織再編⑤・民法⑥はSティア相当。" },
+    { date:"2026-06-16", subj:"運営", body:"📖 <b>苦手復習_104_04（生産思想・SLP詳細・IE小粒 S2周目）を整備</b>。SティアのSLP・IE系の2周目強化。", advice:"6/15の運営A確認で最弱と出た<b>生産統制・スケジューリング</b>の苦手復習ノート化が次の最優先。" },
+    { date:"2026-06-16", subj:"企業経営", body:"📖 <b>苦手復習ノートを整備</b>：_103_02（意思決定・5F・VRIO）・_103_03（構造設計・動機づけ・採用教育）。SティアのRBV/VRIO・ファイブフォース・意思決定・構造設計の底上げ。",
+      advice:"読了したら確認システムで📝テスト→○率変化を測定。構造設計(△11)・RBV/VRIO(○2)が伸びしろ最大。" },
+    { date:"2026-06-15", subj:"運営", body:"📝 <b>運営Aティア13論点を連続確認版で一巡</b>。学習済み7論点を測定：売場統計<b>○6△6×0</b>／ライン編成効率★<b>○11△0×1</b>／需要予測★<b>○10△2×0</b>／生産統制<b>○5△7×0</b>／スケジューリング★<b>○3△8×1</b>／設備保全★<b>○5△7×0</b>／管理指標<b>○5△6×1</b>。未学習6論点(陳列/店舗L/PERT/販促/QC/EDI本体)はテスト除外。EDIは商品コード(GS1)のみ既習。",
+      advice:"<b>×は全体で計4問のみ＝誤解でなく確信不足の△が主体</b>。<b>計算系は強い</b>(ライン編成・需要予測・設備保全のMTBF/可用率は全○)。<b>最弱=生産統制(△7)・スケジューリング(△8)</b>＝用語全般未定着で<b>苦手復習ノート化の最有力2論点</b>。固めれば○化=売場統計(PI値・売上分解)/管理指標(可動率vs稼働率)/設備保全(保全方式の体系)。<b>次の一手：①生産統制＋スケジューリングの苦手復習ノート作成 ②未学習6論点のインプット</b>。" },
+    { date:"2026-06-14", subj:"情報", body:"📝 <b>情報Aティア7論点を新規確認テスト（各28問）で一気に実力測定</b>：データ分析基盤<b>79%</b>(○22△5×1)／IoT<b>61%</b>(○17△10×1)／PM<b>54%</b>(○15△13×0)／DB設計<b>46%</b>(○13△15×0)／Web<b>39%</b>(○11△15×2)／OS<b>29%</b>(○8△20×0)／記憶装置<b>29%</b>(○8△20×0)。",
+      advice:"誤答(×)は全7論点で計6問のみ＝方向は外していないが<b>△が大半＝知識が浅い</b>。特に<b>OS・記憶装置は論点丸ごと未定着</b>、Webも基本概念が浅い。×△は全て復習キューに記録済。次は<b>情報A 7論点を苦手復習ノート1本に集約</b>→OS・記憶・Webを重点的に底上げするのが効率的。データ基盤はほぼ仕上で直前確認のみでよい。" },
+    { date:"2026-06-14", subj:"企業経営", body:"📝 <b>3論点を受験し全て大幅改善</b>：採用・教育訓練<b>○13△0×1</b>／労働基準法<b>○13△0×1</b>／アンゾフ多角化<b>○14△0×0＝全問クリア🎉</b>（前回 採用○9△4×1・労基○3△4×1・アンゾフ○4△4×0）。",
+      advice:"残×は採用=<b>OJTの長所</b>・労基=<b>労災保険料（全額事業主負担）</b>の2問のみ（復習キューに蓄積）。アンゾフは型・垂直統合方向・関連多角化を完全克服。次は企業経営の残りS弱点（意思決定・5F・RBV/VRIO）か別科目へ。" },
+    { date:"2026-06-13", subj:"法務", body:"📖 <b>①特許・③不競法・⑤組織再編・⑥a相続</b>の4論点を並行学習。特許は<b>侵害救済まで</b>到達、不競法は<b>デッドコピーまで</b>、組織再編は<b>合併まで（チェック問追加）</b>、相続は<b>チェック問追加</b>。",
+      advice:"特許の残り：<b>存続期間(出願日から20年)・審判・国際出願</b>。不競法の残り：<b>営業秘密3要件</b>。①③読了次第まとめてテスト→「更新」で反映。" },
+    { date:"2026-06-13", subj:"法務", body:"🔁 <b>②商標法 苦手復習_105_02（2回目）</b>を確認。前テスト<b>×3・△10</b>の13問に絞った復習。周知商標の混同防止(4条1項15号)・類否判断の3要素・氏名商標の例外・使用による識別力取得が弱点。",
+      advice:"急所：<b>15号＝「商品が違っても混同おそれなら不登録」</b>（類似商品前提の10号との違い）、<b>類否＝外観・称呼・観念の総合</b>（称呼だけに偏らない）。復習後に再テストで×3→○へ転換できたか確認を。" },
+    { date:"2026-06-13", subj:"法務", body:"🔁 <b>④機関設計 苦手復習_105_01b（2回目）</b>を確認。2回目テスト（6/10）<b>×1・△4</b>の5問に絞った復習。特別利害関係（取締役会vs株主総会の違い）・代表取締役の選定解職権限・監査等委員会の構成・権利義務取締役が2回連続の苦手。",
+      advice:"急所：<b>取締役会の特別利害関係＝議決に加われない（排除）</b>vs<b>株主総会は行使できる</b>の対比を固める。代表取締役選定解職＝<b>取締役会の権限（株主総会ではない）</b>。×1まで来ており次回テストで○化が見えている。" },
+    { date:"2026-06-13", subj:"情報", body:"📖 <b>②TCP/IP・④脅威対策</b>の苦手復習_106_01を修正・学習。TCP/IP：○10△17×1、脅威対策：○16△9×3。テスト未実施。",
+      advice:"修正後の再テストが最優先。TCP/IP→<b>サブネット/NAPT/ARP/TCP-UDP</b>、脅威対策→<b>×3の潰し込み</b>をしてから📝テスト→「更新」で○率の変化を測る。" },
+    { date:"2026-06-13", subj:"企業経営", body:"📖 <b>苦手復習6論点</b>を一気に読み込み。構造設計・RBV/VRIO・ファイブフォース・意思決定を<b>学習中</b>。労働基準法・アンゾフ多角化は読了→<b>📝テスト待ち</b>に昇格。",
+      advice:"テスト待ちの2論点（労働法規・多角化）を確認システムで早期受験→○率測定。残り4論点は読了後まとめて受験。<b>一番伸びしろが大きい科目</b>なので得点源化を急ぐ。" },
+    { date:"2026-06-13", subj:"運営", body:"📖 <b>②在庫管理・⑨SLP・⑧生産合理化</b>の苦手復習を学習（苦手復習_104_01・04）。在庫○5△8×2・SLP○5△7×2・生産合理化○7△6×1。いずれも学習中。",
+      advice:"在庫管理の公式群（発注量・安全在庫・EOQ）とSLPの手順（P→Q→R→S）を優先。読了→📝テスト→「更新」で3論点の○率変化を測る。" },
+    { date:"2026-06-13", subj:"経済学", body:"📖 <b>qz_21生産者理論・qz_22消費者理論（過去問例題付き）・qz_23市場の効率性</b>を新規作成。経済Sノート整備が本格化。",
+      advice:"経済はSノートを作りながら同時に<b>確認システムへの登録</b>も進める。乗数効果→マンデル=フレミング→弾力性の順で優先度高い。" },
+    { date:"2026-06-11", subj:"情報", body:"📖 <b>①トランザクション・②TCP/IP</b>を学習（苦手復習_106_01を修正しつつ）。両方<b>△17</b>の底上げ中。テスト未実施。",
+      advice:"△の山は <b>分離レベル/2PC/ロック/回復(WAL)</b>と<b>TCP vs UDP/サブネット/ARP・NAPT</b>。修正後 <b>📝テスト待ち</b>→再テスト→<b>「更新」</b>で○率の伸びを測る。" },
+    { date:"2026-06-11", subj:"企業経営", body:"📖 <b>構造設計・RBV/VRIO・ファイブフォース</b>を学習（苦手復習_103_02/03）。S弱点の底上げ。テスト未実施。",
+      advice:"急所：構造設計＝<b>機械的/有機的・管理の幅</b>、VRIO＝<b>V/R/I/Oの4つの問い</b>、5F＝<b>代替品・買い手/売り手の交渉力</b>。読了後まとめて📝テスト待ち→「更新」。" },
+    { date:"2026-06-11", subj:"全体戦略", body:"優先順位を<b>底固め優先</b>で総点検・再編。<b>P1=底の穴(法務飛ばしS) → P2=底上げ(S済だが弱い) → P3=上積み(得点源A/B) → P4=守り維持</b>の順に。企業経営の広い上積み(#8)は緊急度を下げ<b>P3へ降格</b>。経済は<b>別枠</b>。",
+      advice:"足切り回避・下振れ防止が最優先。まず<b>法務の飛ばしS(特許・不競法は進行中→組織再編→相続)</b>を埋め切る。得点源の広い拡張は底固め後で十分間に合う。" },
+    { date:"2026-06-10", subj:"情報", body:"📖 <b>①トランザクション（全科目最弱級）</b>学習開始。<b>苦手復習_106_01</b>の内容を修正しつつインプット。確認は前回<b>○9△17×2</b>。",
+      advice:"△17の山は <b>分離レベルの梯子／2相コミット(2PC)／ロック詳細(2PL・粒度・MVCC)／回復のbefore-after</b>と、×の<b>ファントムvs反復不能・WALの向き</b>。修正後に <b>📝テスト待ち</b>→再テスト→<b>「更新」</b>で○率がどれだけ上がるか測れます。" },
+    { date:"2026-06-10", subj:"法務", body:"📖 <b>③不正競争防止法</b>学習開始。<b>qz_22不競法</b>を修正しつつ、<b>混同惹起まで</b>。確認テストは<b>未実施</b>。",
+      advice:"③の山は <b>混同惹起／著名表示冒用／営業秘密(3要件=秘密管理性・有用性・非公知性)／形態模倣(デッドコピー・3年)</b>。①特許と読了したら <b>2論点まとめて📝テスト待ち</b>→確認システム→<b>「更新」</b>で両方の○率反映。" },
+    { date:"2026-06-10", subj:"法務", body:"📖 <b>①特許（最優先P1）</b>学習中。<b>qz_19特許法</b>を修正しつつインプット、<b>②登録要件まで到達</b>。確認テストは<b>未実施</b>。",
+      advice:"残りは<b>職務発明・実施権(専用/通常)・侵害・存続期間(出願日から20年)</b>が頻出の山。読了したら <b>📝テスト待ち</b>→確認システムで特許テスト→<b>「更新」</b>で○率反映。" },
+    { date:"2026-06-10", subj:"全体戦略", body:"動画(残り60日予想)を踏まえ<b>目標を再配分</b>。<b>中小80→60(守り)</b>／<b>企業経営60→75・情報60→70・法務50→65(得点源)</b>に入替。ダッシュボード作成。",
+      advice:"まず<b>法務の飛ばしS(特許・不競法)</b>と<b>情報①②</b>の最弱から着手を。経済は<b>Sゼロ</b>なので並行でノート→確認立ち上げ。" }
+  ],
+
+  // 📅 昨日チェック手動注入（rolloverが正しく拾えなかった場合に補完。forUpdated === dash_last_updated のときだけ適用）
+  yestInit: {
+    forUpdated: "2026-07-08",
+    keys: [
+      "法務｜法務直前1 知財",
+      "運営｜運営管理直前1",
+      "企業経営｜企業経営直前2　組織・人的資源",
+      "情報｜経営情報直前3 開発・トレンド",
+      "経済学｜qz_all.直前_経済学_全範囲統合版"
+    ]
+  }
+};
+</script>
+
+<!-- ============================================================== -->
+<!-- 表示部（基本さわらない）                                        -->
+<!-- ============================================================== -->
+<script>
+function barColor(p){ return p>=60?'var(--done)': p>=40?'var(--p2)':'var(--p1)'; }
+
+const STATES = ['⬜未着手','📖学習中','📝テスト待ち','🔁要再訪','✅済'];
+function stateSelect(r){
+  return `<select class="rowstate" data-r="${r}">`+
+    STATES.map(s=>`<option value="${s}">${s}</option>`).join('')+`</select>`;
+}
+function applyStateColor(sel){
+  const m={'⬜未着手':'#ffffff','📖学習中':'#eff6ff','📝テスト待ち':'#fef9c3','🔁要再訪':'#ffedd5','✅済':'#dcfce7'};
+  sel.style.background = m[sel.value]||'#fff';
+}
+
+function render(){
+  document.getElementById('updated').textContent = DATA.updated;
+
+  const ex = new Date(DATA.examDate), now = new Date();
+  const days = Math.ceil((ex - now)/86400000);
+  document.getElementById('countdown').textContent = (days>=0? `あと ${days} 日` : '試験日経過') + `（${DATA.examDate}・02 の2日間）`;
+
+  const main = DATA.subjects.filter(s=>!s.alt);
+  const targetSum = DATA.subjects.reduce((a,s)=>a+s.target,0);
+  const avgProg = Math.round(main.reduce((a,s)=>a+s.progress,0)/main.length);
+  const sd = [
+    {label:"目標合計", val:`${targetSum}<small> / 合格 ${DATA.passLine}・余裕+${targetSum-DATA.passLine}</small>`},
+    {label:"主要6科目 平均進捗", val:`${avgProg}<small>%</small>`},
+    {label:"得点源(深掘り)", val:`3<small>科目（経営・情報・法務）</small>`},
+    {label:"要注意の穴", val:`<small>法務・飛ばしS／経済・S未着手</small>`}
+  ];
+  document.getElementById('summary').innerHTML = sd.map(s=>
+    `<div class="stat"><div class="label">${s.label}</div><div class="val">${s.val}</div></div>`).join('');
+
+  // 次の一手：①本日の実施予定（⭐本日推奨を集約・後で renderTodayPlan が中身を入れる）＋②従来の助言(nextNote)
+  document.getElementById('next').innerHTML =
+    `<div id="today-plan"></div>`+
+    (DATA.nextNote?`<div class="next-note">${DATA.nextNote}</div>`:'');
+
+  document.getElementById('cards').innerHTML = DATA.subjects.map(s=>{
+    const cls = s.alt?'alt': (typeof s.rank==='number' && s.rank<=3?('r'+s.rank):'');
+    const maru = s.maru==null?'—':(s.maru+'%');
+    return `<div class="subj ${cls}">
+      <div class="top">
+        <div><span class="nm">${s.code} ${s.name}</span><span class="role">${s.role}</span></div>
+        <span class="pri">優先 ${s.rank}</span>
+      </div>
+      <div class="goal">
+        <span>目標 <b>${s.target}</b>点</span>
+        <span>到達 <b>${s.depth}</b></span>
+        <span>確認○率 <b>${maru}</b></span>
+      </div>
+      <div class="bar"><i style="width:${s.progress}%;background:${barColor(s.progress)}"></i><span class="pct">${s.progress}%</span></div>
+      <div class="detail"><b>S：</b>${s.s}<br><b>A以降：</b>${s.a}<br><b>復習：</b>${s.review}<br>💡 ${s.note}</div>
+    </div>`;
+  }).join('');
+
+  function taskRow(t,i){
+    return `<tr data-r="${t.r}">
+      <td class="rank"><i class="band b-${t.band}"></i>${i+1}</td>
+      <td>${t.topic}</td>
+      <td class="rec-cell"><input type="checkbox" class="rowrec" data-r="${t.r}" title="本日実行推奨"></td>
+      <td><span class="tag">${t.subj}</span></td>
+      <td class="res">${t.res}</td>
+      <td><input class="rowcomment" data-r="${t.r}" value="" placeholder="${(t.reason||'').replace(/"/g,'&quot;')}" title="${(t.reason||'').replace(/"/g,'&quot;')}"></td>
+      <td>${stateSelect(t.r)}</td>
+      <td><textarea class="rowmemo" data-r="${t.r}" placeholder="ファイル"></textarea></td>
+      <td class="done-cell"><input type="checkbox" class="rowdone" data-r="${t.r}"></td>
+      <td class="plan-cell"><label class="plan-lab" title="翌日も続けてやる予定。チェックすると翌日「⭐本日推奨」に自動でONになり、本日の実施予定に出ます"><input type="checkbox" class="rowplan" data-r="${t.r}">📅翌日も</label><label class="prio-lab" title="明日これを優先したい。チェックすると翌日、本日の実施予定の【先頭】に強調表示されます"><input type="checkbox" class="rowprio" data-r="${t.r}">⭐優先</label><span class="after-wrap"><input type="number" min="1" class="rowafter" data-r="${t.r}" placeholder="日" title="入力した日数後の当日だけ本日の実施予定へ自動表示">日後<button type="button" class="after-clear" data-r="${t.r}" title="この行のN日後設定だけ取り消す">×</button></span></td>
+    </tr>`;
+  }
+  const mainTasks = DATA.tasks.filter(t=>!['EC','P4','OK'].includes(t.band));
+  const p4Tasks   = DATA.tasks.filter(t=>t.band==='P4');
+  const okTasks   = DATA.tasks.filter(t=>t.band==='OK');
+  const ecTasks   = DATA.tasks.filter(t=>t.band==='EC');
+  document.querySelector('#tasks tbody').innerHTML   = mainTasks.map(taskRow).join('');
+  document.querySelector('#p4-tasks tbody').innerHTML = p4Tasks.map(taskRow).join('');
+  document.querySelector('#ok-tasks tbody').innerHTML = okTasks.map(taskRow).join('');
+  document.querySelector('#ec-tasks tbody').innerHTML = ecTasks.map(taskRow).join('');
+  document.querySelectorAll('textarea.rowmemo').forEach(t=>{ t.value = localStorage.getItem('dash_tm_'+t.dataset.r)||''; });
+  document.querySelectorAll('input.rowcomment').forEach(t=>{ t.value = localStorage.getItem('dash_cm_'+t.dataset.r)||''; });
+  const stateDefault = {}; DATA.tasks.forEach(t=>{ if(t.state) stateDefault[t.r]=t.state; });
+  document.querySelectorAll('select.rowstate').forEach(s=>{ s.value = localStorage.getItem('dash_st_'+s.dataset.r) || stateDefault[s.dataset.r] || STATES[0]; applyStateColor(s); });
+  // ✓本日実施は localStorage から復元（リフレッシュボタンで一括クリア）
+  document.querySelectorAll('input.rowdone').forEach(cb=>{
+    if(cb.dataset.r && localStorage.getItem('dash_dn_'+cb.dataset.r)==='1'){ cb.checked=true; cb.closest('tr').classList.add('done-row'); }
+  });
+  // 📅翌日も予定 を復元 ＆ ⭐本日推奨 を自動判定
+  //  「翌日も予定」をチェックした日(=保存された日付)より後の日になったら、翌日「本日推奨」へ自動チェック
+  const _today = appToday();
+  document.querySelectorAll('input.rowplan').forEach(cb=>{
+    if(cb.dataset.r && localStorage.getItem('dash_plan_'+cb.dataset.r)) cb.checked=true;
+  });
+  document.querySelectorAll('input.rowrec').forEach(cb=>{
+    if(!cb.dataset.r) return;
+    const manual  = localStorage.getItem('dash_rec_'+cb.dataset.r)==='1';
+    if(manual || shouldAutoRec(cb.dataset.r, _today)){ cb.checked=true; cb.closest('tr').classList.add('rec-row'); }
+  });
+
+  // 日付でまとめ → 各日付内で科目でまとめ
+  const byDate={};
+  DATA.logs.forEach(l=>{ (byDate[l.date]=byDate[l.date]||[]).push(l); });
+  const dates=Object.keys(byDate).sort().reverse();
+  const _tl=document.getElementById('timeline');
+  if(_tl) _tl.innerHTML = dates.length ? dates.map(d=>{
+    const bySubj={};
+    byDate[d].forEach(l=>{ const s=l.subj||'その他'; (bySubj[s]=bySubj[s]||[]).push(l); });
+    const subs=Object.keys(bySubj).map(s=>{
+      const es=bySubj[s].map(l=>`<div class="b">${l.body}</div>`+(l.advice?`<div class="a">${l.advice}</div>`:'')).join('');
+      return `<div class="log-subj"><span class="subj-tag">${s}</span>${es}</div>`;
+    }).join('');
+    return `<div class="log-date"><div class="d">${d}</div>${subs}</div>`;
+  }).join('') : '<div style="color:var(--sub);font-size:.85rem">まだ記録がありません。</div>';
+
+  document.getElementById('foot').innerHTML =
+    `データはClaude Codeが確認テスト結果・進捗に応じて随時更新します（このHTMLの「データ部」を書き換え）。`+
+    `元データ：<code>確認システム/進捗.md</code>／メモリ <code>project_1ji_target_depth_r8</code>`;
+
+  renderChart();
+}
+
+// 📊 日別・科目別 実績グラフ（記録開始日からの積み上げ棒）
+const SUBJ_COLORS = {
+  '法務':'#4338ca', '情報':'#0284c7', '企業経営':'#16a34a', '運営':'#ea580c',
+  '経済学':'#7c3aed', '財務':'#0891b2', '中小':'#ca8a04', '全体戦略':'#64748b'
+};
+function subjColor(s){ return SUBJ_COLORS[s] || '#94a3b8'; }
+// 論点・ファイル名から科目を自動判定（追加記録／模試・直前まとめ／問題実行で共用）
+// 上にあるものほど優先（中小・企業経営の「経営」衝突を避けるため中小を先に）
+const SUBJ_RULES = [
+  // 中小は「政策系の語があるとき」だけ判定（バラの『中小』は企業経営の中小企業戦略と衝突するため拾わない）
+  ['中小',    /小規模|政策編|中小企業基本|中小企業政策|中小企業施策|中小企業憲章|金融支援|下請|共済|セーフティ|振興|商店街|協同組合|補助金|助成|白書|経営革新|事業承継|規模別|中小企業.{0,12}政策/],
+  ['企業経営',/企業経営|経営戦略|経営理論|マーケ|ブランド|VRIO|競争戦略|差別化|成長戦略|多角化|セグメ|ターゲティング|国際経営|CSR|ステークホルダー|ベンチャー|中小企業戦略|BSC|経営計画|イノベ|組織|モチベ|動機づけ|リーダーシップ|労使|労働組合|購買意思決定|消費者行動|5F|ファイブフォース|RBV|労働法|労務|プロモーション|流通|チャネル|製品ライフ|PPM|アンゾフ|M&A|戦略論|人的資源/],
+  ['法務',    /法務|商標|特許|実用新案|不正競争|不競|著作|会社法|機関設計|設立|定款|民法|知財|意匠|組織再編|合併|相続|国際契約|先使用|類否|出願|侵害|株式|契約|債権|手形|破産|独占禁止|金融商品取引/],
+  ['情報',    /情報システム|情報技術|\bIT\b|TCP|\bIP\b|\bSQL\b|データベース|\bDB\b|機械学習|\bAI\b|暗号|認証|セキュリティ|脅威|不正アクセス|\bDWH\b|データ分析基盤|トランザクション|クラウド|アルゴリズム|プログラ|統計|記憶装置|\bCPU\b|ネットワーク|\bLAN\b|\bOS\b|Web|(?<!\.)HTML|システム開発|システムファイル/i],
+  ['運営',    /運営|生産管理|生産計画|在庫|物流|店舗|陳列|レイアウト|\bPOS\b|JIT|工程|標準化|作業|バーコード|ECRS|TPS|段取り|製番|MRP|TOC|ボトルネック|発注|品質管理|\bQC\b|IE|設備|納期|まちづくり|都市計画/],
+  ['財務',    /財務|会計|\bCVP\b|簿記|仕訳|決算|貸借|損益|\bB\/S\b|\bP\/L\b|ポートフォリオ|企業価値|減損|のれん|リース|デリバティブ|オプション|先物|スワップ|\bNPV\b|\bIRR\b|\bWACC\b|\bCAPM\b|タックスシールド|資本構成|経営分析|財務分析|配当|キャッシュフロー|\bCF\b|資金調達|棚卸|原価|\bMM理論\b|レバレッジ/],
+  ['経済学',  /経済|ミクロ|マクロ|IS-?LM|需要|供給|弾力|余剰|乗数|\bGDP\b|国民所得|所得効果|代替効果|価格効果|労働供給|スルツキー|無差別曲線|費用関数|生産関数|効用|限界|完全競争|独占|寡占|ゲーム理論|マンデル|フレミング|デフレギャップ|インフレ|失業|金融政策|財政政策|45度線|外部不経済|公共財/],
+];
+// 科目フォルダ番号 → 科目（ファイル欄・パスに 102_財務・会計 / _105_ などが入ることが多いので最優先の手がかり）
+const SUBJ_BY_NUM = {'101':'経済学','102':'財務','103':'企業経営','104':'運営','105':'法務','106':'情報','107':'中小'};
+function subjByNum(text){
+  // "102_財務" "_105_" "／105_経営法務" など、10x が _ か科目フォルダ名に隣接しているものだけ拾う
+  const m=(text||'').match(/(?:^|[^0-9])(10[1-7])(?:_|[／/]|・|\s|経済|財務|会計|企業経営|運営|経営法|経営情|情報|中小)/);
+  return (m && SUBJ_BY_NUM[m[1]]) || '';
+}
+// 科目名がそのまま入っていれば最優先（中小企業経営は企業経営より先に判定）
+const SUBJ_NAMES = [
+  ['中小',    /中小企業経営|中小企業政策|中小企業・政策|中小企業経営・政策|中小企業診断/],
+  ['企業経営',/企業経営理論|企業経営/],
+  ['経済学',  /経済学|経済政策|ミクロ経済|マクロ経済/],
+  ['財務',    /財務・会計|財務会計|財務・?会計/],
+  ['運営',    /運営管理/],
+  ['法務',    /経営法務/],
+  ['情報',    /経営情報|情報システム/],
+];
+function subjByName(text){ const s=(text||''); for(const [n,re] of SUBJ_NAMES){ if(re.test(s)) return n; } return ''; }
+// 1つの文字列から科目を推定：① 科目名 → ② フォルダ番号 → ③ キーワード
+function guessOne(text){
+  const s=(text||'');
+  return subjByName(s) || subjByNum(s) || (SUBJ_RULES.find(([,re])=>re.test(s))||[''])[0];
+}
+// 論点(topic)を常にファイル名(memo)より優先して科目を推定する
+function guessSubj(topic, memo){
+  if(memo===undefined) return guessOne(topic);          // 後方互換（連結文字列で呼ばれた場合）
+  return guessOne(topic) || guessOne(memo);
+}
+// 科目を自動判定して補完／更新する。
+//  data-autosubj==='0'（＝ユーザーが手入力でロックした科目）だけは尊重し、それ以外は毎回判定し直す。
+//  これにより、古いルールで誤判定された保存済みの科目もリロードのたびに最新ルールへ更新される。
+function autofillSubjForRow(tr){
+  const si=tr&&tr.querySelector('.ex-subj'); if(!si) return false;
+  if(si.dataset.autosubj==='0') return false;   // 手入力ロックは触らない
+  const topic=tr.querySelector('.ex-topic')?.value||'';
+  const memo =tr.querySelector('textarea')?.value||'';
+  const g=guessSubj(topic, memo);
+  if(g && g!==si.value){ si.value=g; si.dataset.autosubj='1'; return true; }
+  if(g) si.dataset.autosubj='1';   // 値は同じでも自動判定由来であることを記録
+  return false;
+}
+function autofillSubjects(tbody){
+  let changed=false;
+  tbody && tbody.querySelectorAll('tr').forEach(tr=>{ if(autofillSubjForRow(tr)) changed=true; });
+  return changed;
+}
+// 追加記録系テーブル共通の input ハンドラ（論点/ファイル名の編集で科目を自動補完）
+function extraInputHandler(saveFn){
+  return function(e){
+    const t=e.target, tr=t&&t.closest&&t.closest('tr');
+    if(tr){
+      if(t.classList&&t.classList.contains('ex-subj')){
+        // 科目を直接編集 → 自動フラグ解除（空にしたら再自動化を許可）
+        t.dataset.autosubj = t.value.trim()? '0' : '';
+      } else if(t.classList&&(t.classList.contains('ex-topic')||t.tagName==='TEXTAREA')){
+        if(autofillSubjForRow(tr) && typeof renderTodayPlan==='function') renderTodayPlan();
+      }
+    }
+    saveFn();
+  };
+}
+function renderChart(){
+  // 日付×科目で件数を集計（全体戦略＝方針更新は学習量ではないので除外）
+  const byDate={};
+  DATA.logs.forEach(l=>{
+    if(l.subj==='全体戦略') return;
+    const d=l.date, s=l.subj||'その他';
+    (byDate[d]=byDate[d]||{})[s] = (byDate[d][s]||0)+1;
+  });
+  const dates=Object.keys(byDate).sort();           // 記録開始日から昇順
+  if(!dates.length){ document.getElementById('chart-area').innerHTML='<div style="color:var(--sub);font-size:.85rem">まだ記録がありません。</div>'; return; }
+
+  const totals=dates.map(d=>Object.values(byDate[d]).reduce((a,b)=>a+b,0));
+  const maxTotal=Math.max(...totals);
+  const MAXPX=170;   // 最大バー高さ
+
+  document.getElementById('chart-area').innerHTML = dates.map(d=>{
+    const subs=Object.keys(byDate[d]).sort((a,b)=>byDate[d][b]-byDate[d][a]);
+    const total=byDate[d][subs[0]] ? Object.values(byDate[d]).reduce((a,b)=>a+b,0) : 0;
+    const barH=Math.round(MAXPX*total/maxTotal);
+    const segs=subs.map(s=>{
+      const n=byDate[d][s];
+      const h=Math.round(barH*n/total);
+      return `<div class="chart-seg" style="height:${h}px;background:${subjColor(s)}" title="${s}：${n}件">${n}</div>`;
+    }).join('');
+    const md = d.slice(5).replace('-','/');         // MM/DD
+    return `<div class="chart-col">
+      <div class="chart-total">${total}件</div>
+      <div class="chart-bar" style="height:${barH}px">${segs}</div>
+      <div class="chart-date">${md}</div>
+    </div>`;
+  }).join('');
+
+  // 凡例：実際に登場した科目だけ
+  const used=[...new Set(DATA.logs.filter(l=>l.subj!=='全体戦略').map(l=>l.subj))];
+  document.getElementById('chart-legend').innerHTML = used.map(s=>
+    `<span><i style="background:${subjColor(s)}"></i>${s}</span>`).join('');
+}
+render();
+
+// 行メモ・状態（localStorage 自動保存・委譲）
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// 🗓 アプリ上の「今日」＝DATA.updated（「更新」で翌日へ進めた基準日）。⭐優先・翌日予定・N日後の判定はすべてこの軸に統一する。
+// 実時計(todayStr)で判定すると、同じ実日付内で押した⭐優先が翌日扱いにならず反映漏れする不具合になるため。
+function appToday(){ try{ if(typeof DATA!=='undefined' && DATA && DATA.updated) return DATA.updated; }catch(e){} return todayStr(); }
+// 📆 「○日後に実施」スケジュール：入力日(base)＋N日後の「その日1日だけ」本日推奨を自動ON
+function addDays(dateStr, n){ const d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function afterTarget(r){ try{ const o=JSON.parse(localStorage.getItem('dash_after_'+r)||'null'); if(o&&o.base&&o.n>0) return {n:o.n, target:addDays(o.base,o.n)}; }catch(e){} return null; }
+function afterToday(r, today){ const a=afterTarget(r); return !!(a && a.target===today); }   // 予定日「当日」だけON
+function afterPending(r, today){ const a=afterTarget(r); return !!(a && a.target>today); }      // まだ先の予定（翌日予定より優先＝抑制に使う）
+// その行の⭐本日推奨を自動ONすべきか（manual除く）。N日後を優先：N日後が未到来の間は翌日予定の自動ONを抑制
+// ⭐明日優先：チェックした日より後の日になったら有効（＝翌日以降この行を優先表示＆本日推奨へ）
+function shouldPrio(r, today){ const d=localStorage.getItem('dash_prio_'+r); return !!(d && d < today); }
+function shouldAutoRec(r, today){
+  const planD = localStorage.getItem('dash_plan_'+r);
+  const autoPlan = planD && planD < today && !afterPending(r, today);
+  return autoPlan || afterToday(r, today) || shouldPrio(r, today);
+}
+// 全テーブルの ⭐明日優先 チェック状態を localStorage から復元
+function restorePrioStates(root){
+  (root||document).querySelectorAll('input.rowprio').forEach(cb=>{
+    if(cb.dataset.r && localStorage.getItem('dash_prio_'+cb.dataset.r)){ cb.checked=true; cb.closest('tr')?.classList.add('prio-row'); }
+  });
+}
+function setAfter(input){
+  const r=input.dataset.r; if(!r) return;
+  const v=parseInt(input.value,10);
+  if(v>=1){ localStorage.setItem('dash_after_'+r, JSON.stringify({base:appToday(), n:v})); }
+  else { localStorage.removeItem('dash_after_'+r); }
+  const a=afterTarget(r); input.title = a ? ('実施予定日：'+a.target+'（その日だけ表示・あと'+a.n+'日後）') : '入力した日数後の当日だけ本日の実施予定へ自動表示';
+  // 即時反映（N日後優先で翌日予定を抑制／予定日当日ならON）
+  const tr=input.closest('tr'); const rec=tr&&tr.querySelector('input.rowrec');
+  if(rec){
+    const manual=localStorage.getItem('dash_rec_'+r)==='1';
+    const on = manual || shouldAutoRec(r, appToday());
+    if(rec.checked!==on){ rec.checked=on; tr.classList.toggle('rec-row', on); renderTodayPlan(); }
+  }
+}
+// 各行の「○日後」入力を復元（過ぎた予定は失効してクリア）
+function restoreAfterInputs(root){
+  const today=appToday();
+  (root||document).querySelectorAll('input.rowafter').forEach(inp=>{
+    const r=inp.dataset.r; if(!r) return;
+    const a=afterTarget(r);
+    if(!a){ inp.value=''; return; }
+    if(a.target < today){ localStorage.removeItem('dash_after_'+r); inp.value=''; inp.title='入力した日数後の当日だけ本日の実施予定へ自動表示'; return; } // 予定日を過ぎたら失効
+    inp.value=a.n; inp.title='実施予定日：'+a.target+'（その日だけ表示・'+a.n+'日後）';
+  });
+}
+function tmKey(r){ return 'dash_tm_'+r; }
+function stKey(r){ return 'dash_st_'+r; }
+function dnKey(r){ return 'dash_dn_'+r; }
+function attachTableEvents(tb){
+  tb.addEventListener('input', e=>{
+    const t=e.target;
+    if(t.classList.contains('rowmemo')){ localStorage.setItem(tmKey(t.dataset.r), t.value); renderTodayPlan(); }
+    if(t.classList.contains('rowcomment')){ localStorage.setItem('dash_cm_'+t.dataset.r, t.value); renderTodayPlan(); }
+  });
+  tb.addEventListener('change', e=>{
+    const t=e.target;
+    if(t.classList.contains('rowstate')){ localStorage.setItem(stKey(t.dataset.r), t.value); applyStateColor(t); }
+    if(t.classList.contains('rowdone')){
+      t.closest('tr').classList.toggle('done-row', t.checked);
+      if(t.dataset.r){ t.checked ? localStorage.setItem(dnKey(t.dataset.r),'1') : localStorage.removeItem(dnKey(t.dataset.r)); }
+    }
+    if(t.classList.contains('rowplan')){
+      // チェックした「今日の日付」を保存 → 翌日以降に⭐本日推奨が自動でON
+      if(t.dataset.r){ t.checked ? localStorage.setItem('dash_plan_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_plan_'+t.dataset.r); }
+    }
+    if(t.classList.contains('rowprio')){
+      // ⭐明日優先：今日の日付を保存 → 翌日以降この行を本日の実施予定の先頭に優先表示＆本日推奨へ
+      t.closest('tr')?.classList.toggle('prio-row', t.checked);
+      if(t.dataset.r){ t.checked ? localStorage.setItem('dash_prio_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_prio_'+t.dataset.r); }
+      renderTodayPlan();
+    }
+    if(t.classList.contains('rowafter')) setAfter(t);
+    if(t.classList.contains('rowrec')){
+      t.closest('tr').classList.toggle('rec-row', t.checked);
+      if(t.dataset.r){ t.checked ? localStorage.setItem('dash_rec_'+t.dataset.r,'1') : localStorage.removeItem('dash_rec_'+t.dataset.r); }
+    }
+  });
+}
+attachTableEvents(document.querySelector('#tasks tbody'));
+attachTableEvents(document.querySelector('#p4-tasks tbody'));
+attachTableEvents(document.querySelector('#ok-tasks tbody'));
+attachTableEvents(document.querySelector('#ec-tasks tbody'));
+
+// 全体メモ（localStorage 自動保存）
+const memo = document.getElementById('memo');
+const KEY = 'shindanshi_dashboard_memo';
+memo.value = localStorage.getItem(KEY) || '';
+memo.addEventListener('input', ()=> localStorage.setItem(KEY, memo.value));
+document.getElementById('clearBtn').onclick = ()=>{ if(confirm('全体メモをクリアしますか？')){ memo.value=''; localStorage.removeItem(KEY);} };
+
+// 🗒 やることメモ（入力欄＝この端末に自動保存／履歴＝DATA.todoLog を新しい順に積み上げ表示）
+const todoMemo = document.getElementById('todo-memo');
+const TODO_KEY = 'shindanshi_dashboard_todo';
+if(todoMemo){
+  todoMemo.value = localStorage.getItem(TODO_KEY) || '';
+  todoMemo.addEventListener('input', ()=> localStorage.setItem(TODO_KEY, todoMemo.value));
+}
+const _todoClear = document.getElementById('todoClearBtn');
+if(_todoClear) _todoClear.onclick = ()=>{ if(confirm('やることメモの入力欄をクリアしますか？\n（上の履歴は消えません）')){ todoMemo.value=''; localStorage.removeItem(TODO_KEY); } };
+function renderTodoLog(){
+  const host=document.getElementById('todo-log'); if(!host) return;
+  const tl=DATA.todoLog||[];
+  host.innerHTML = tl.length
+    ? tl.map(e=>`<div class="todo-entry"><div class="d">📅 ${e.date}</div><div class="b">${e.html}</div></div>`).join('')
+    : '';
+}
+renderTodoLog();
+
+// ✓本日実施 を一括リフレッシュ（チェックを全部外す）
+document.getElementById('refreshDoneBtn').onclick = ()=>{
+  if(!confirm('「✓本日実施」のチェックを全部外しますか？\n（メモ・状態・記録は消えません）')) return;
+  document.querySelectorAll('input.rowdone').forEach(cb=>{
+    cb.checked=false; cb.closest('tr')?.classList.remove('done-row');
+    if(cb.dataset.r) localStorage.removeItem(dnKey(cb.dataset.r));
+  });
+  renderTodayPlan();
+};
+
+// 📅翌日も予定／N日後 を選択リフレッシュ（チェックした対象を一括クリア）
+document.getElementById('refreshSelBtn').onclick = ()=>{
+  const sel=[...document.querySelectorAll('.rf-target:checked')].map(c=>c.value);
+  if(!sel.length){ alert('リフレッシュ対象（翌日予定／N日後）を1つ以上選んでください。'); return; }
+  const names=sel.map(s=>s==='plan'?'📅翌日も予定':'N日後').join('・');
+  if(!confirm('「'+names+'」のチェック/設定を全部外しますか？\n（⭐本日推奨への自動ONも再評価されます）')) return;
+  if(sel.includes('plan')){
+    document.querySelectorAll('input.rowplan').forEach(cb=>{
+      cb.checked=false; if(cb.dataset.r) localStorage.removeItem('dash_plan_'+cb.dataset.r);
+    });
+  }
+  if(sel.includes('after')){
+    document.querySelectorAll('input.rowafter').forEach(inp=>{
+      inp.value=''; if(inp.dataset.r) localStorage.removeItem('dash_after_'+inp.dataset.r);
+    });
+  }
+  // ⭐本日推奨を再評価（手動ON分だけ残す）
+  const today=appToday();
+  document.querySelectorAll('input.rowrec').forEach(cb=>{
+    if(!cb.dataset.r) return;
+    const manual=localStorage.getItem('dash_rec_'+cb.dataset.r)==='1';
+    const on=manual || shouldAutoRec(cb.dataset.r, today);
+    cb.checked=on; cb.closest('tr')?.classList.toggle('rec-row', on);
+  });
+  renderTodayPlan();
+};
+
+// 追加記録テーブル（行追加・localStorage保存）
+const EXTRA_KEY = 'shindanshi_dashboard_extra_rows';
+const _etb = document.querySelector('#extra-tasks tbody');
+
+// 追加記録の行ごと安定ID（翌日予定→翌日推奨の連動を行単位で保持するため）
+let _exSeq = parseInt(localStorage.getItem('dash_ex_seq')||'0',10)||0;
+function newEid(){ _exSeq++; localStorage.setItem('dash_ex_seq', _exSeq); return 'e'+_exSeq; }
+
+function extraRowHTML(subj,topic,res,reason,state,memo,eid,asub){
+  const rid = 'ex_'+eid;
+  const sel = `<select class="rowstate ex-state">`+STATES.map(s=>`<option value="${s}"${s===(state||STATES[0])?' selected':''}>${s}</option>`).join('')+`</select>`;
+  return `<tr data-eid="${eid}">
+    <td><input class="ex-topic" value="${topic||''}" placeholder="論点・内容を記入"></td>
+    <td class="rec-cell"><input type="checkbox" class="rowrec" data-r="${rid}" title="本日実行推奨"></td>
+    <td><input class="ex-subj" data-autosubj="${asub||''}" value="${subj||''}" placeholder="科目" title="科目（空欄なら論点・ファイル名から自動判定。直接入力するとロックされ自動更新されません）"></td>
+    <td><input class="ex-res" value="${res||''}" placeholder="○△×など"></td>
+    <td><input class="ex-reason" value="${reason||''}" placeholder="コメント"></td>
+    <td>${sel}</td>
+    <td><textarea class="rowmemo" style="min-width:0" placeholder="ファイル">${memo||''}</textarea></td>
+    <td class="done-cell"><input type="checkbox" class="rowdone" data-r="${rid}"></td>
+    <td class="plan-cell"><label class="plan-lab" title="翌日も続けてやる予定。チェックすると翌日「⭐本日推奨」に自動でONになり、本日の実施予定に出ます"><input type="checkbox" class="rowplan" data-r="${rid}">📅翌日も</label><label class="prio-lab" title="明日これを優先したい。チェックすると翌日、本日の実施予定の【先頭】に強調表示されます"><input type="checkbox" class="rowprio" data-r="${rid}">⭐優先</label><span class="after-wrap"><input type="number" min="1" class="rowafter" data-r="${rid}" placeholder="日" title="入力した日数後の当日だけ本日の実施予定へ自動表示">日後<button type="button" class="after-clear" data-r="${rid}" title="この行のN日後設定だけ取り消す">×</button></span><button class="add-row-btn" style="margin:0;padding:2px 7px;font-size:.72rem" data-del>✕</button></td>
+  </tr>`;
+}
+function saveExtraRows(){
+  const rows=[..._etb.querySelectorAll('tr')].map(tr=>({
+    eid: tr.dataset.eid||'',
+    subj: tr.querySelector('.ex-subj')?.value||'',
+    asub: tr.querySelector('.ex-subj')?.dataset.autosubj||'',
+    topic: tr.querySelector('.ex-topic')?.value||'',
+    res: tr.querySelector('.ex-res')?.value||'',
+    reason: tr.querySelector('.ex-reason')?.value||'',
+    state: tr.querySelector('.ex-state')?.value||STATES[0],
+    memo: tr.querySelector('textarea')?.value||''
+  }));
+  localStorage.setItem(EXTRA_KEY, JSON.stringify(rows));
+}
+// 追加記録の ⭐推奨／📅予定／✓実施 を復元（優先タスク表と同じ連動）
+function restoreExtraStates(){
+  const today = appToday();
+  _etb.querySelectorAll('input.rowdone').forEach(cb=>{
+    if(cb.dataset.r && localStorage.getItem('dash_dn_'+cb.dataset.r)==='1'){ cb.checked=true; cb.closest('tr').classList.add('done-row'); }
+  });
+  _etb.querySelectorAll('input.rowplan').forEach(cb=>{
+    if(cb.dataset.r && localStorage.getItem('dash_plan_'+cb.dataset.r)) cb.checked=true;
+  });
+  _etb.querySelectorAll('input.rowrec').forEach(cb=>{
+    if(!cb.dataset.r) return;
+    const manual  = localStorage.getItem('dash_rec_'+cb.dataset.r)==='1';
+    if(manual || shouldAutoRec(cb.dataset.r, today)){ cb.checked=true; cb.closest('tr').classList.add('rec-row'); }
+  });
+}
+// ↩ 6/22 保存スナップショット（dashboard_memos.json 由来）。今ない項目だけ追加で復元する用
+const RESTORE_SNAPSHOT_0622 = [
+  {subj:'法務', topic:'機関設計2回目を確認', res:'×1 △4', state:'📖学習中', memo:'/Users/nori3/Desktop/まとめ/確認システム/105_経営法務/苦手復習_105_01b_会社法機関設計2回目_m.html', rec:true},
+  {subj:'', topic:'リース・のれん・有価証券・タックスシールド', res:'', state:'📖学習中', memo:'/Users/nori3/Desktop/まとめ/確認システム/102_財務・会計/苦手復習_102_01_資産会計・投資評価_m.html', rec:false},
+  {subj:'', topic:'減損・投資評価', res:'', state:'📖学習中', memo:'/Users/nori3/Desktop/まとめ/確認システム/102_財務・会計/苦手復習_102_01b_減損・棚卸評価・投資評価_m.html', rec:true},
+  {subj:'', topic:'ポートフォリオ・経営分析', res:'', state:'📖学習中', memo:'/Users/nori3/Desktop/まとめ/確認システム/102_財務・会計/苦手復習_102_02_ポートフォリオ・経営分析_m.html', rec:true},
+  {subj:'', topic:'企業価値評価', res:'', state:'📖学習中', memo:'/Users/nori3/Desktop/まとめ/確認システム/102_財務・会計/苦手復習_102_03_企業価値評価・資本構成_m.html', rec:false},
+  {subj:'', topic:'CVP分析', res:'', state:'📖学習中', memo:'/Users/nori3/Desktop/まとめ/確認システム/102_財務・会計/苦手復習_102_04_CVP分析_m.html', rec:true},
+  {subj:'', topic:'ステップアップ模試　経済学', res:'', state:'📖学習中', memo:'ステップアップ模試　経済学', rec:true},
+  {subj:'', topic:'財務会計模試', res:'', state:'📖学習中', memo:'st_財務会計_模試', rec:false},
+  {subj:'', topic:'直前チェック1 中小企業経営・政策', res:'', state:'📖学習中', memo:'qz_48.直前_中小企業①経営編まとめ_m', rec:true},
+  {subj:'', topic:'直前チェック2 中小企業経営・政策', res:'', state:'📖学習中', memo:'qz_49.直前_中小企業①経営編まとめ_m', rec:true},
+  {subj:'', topic:'直前チェック3 中小企業経営・政策', res:'', state:'📖学習中', memo:'qz_50.直前_中小企業①経営編まとめ_m', rec:true},
+  {subj:'', topic:'直前チェック1 企業経営理論', res:'', state:'📖学習中', memo:'qz_35.直前_企業経営理論①経営戦略論まとめ_m.html', rec:true},
+  {subj:'', topic:'直前チェック2 企業経営理論', res:'', state:'📖学習中', memo:'qz_36.直前_企業経営理論①経営戦略論まとめ_m.html', rec:true},
+  {subj:'', topic:'直前チェック3 企業経営理論', res:'', state:'📖学習中', memo:'qz_37.直前_企業経営理論①経営戦略論まとめ_m.html', rec:true},
+  {subj:'', topic:'qz_20_苦手_国際経営まとめ_m', res:'', state:'📖学習中', memo:'qz_20_苦手_国際経営まとめ_m', rec:true},
+  {subj:'', topic:'qz_20_苦手.CSR・ステークホルダーまとめ_m', res:'', state:'📖学習中', memo:'qz_20_苦手.CSR・ステークホルダーまとめ_m', rec:true},
+  {subj:'', topic:'qz_21_苦手.ベンチャー・中小企業戦略まとめ_m', res:'', state:'📖学習中', memo:'qz_21_苦手.ベンチャー・中小企業戦略まとめ_m', rec:true},
+  {subj:'', topic:'qz_22.苦手.経営計画・BSCまとめ_m', res:'', state:'📖学習中', memo:'qz_22.苦手.経営計画・BSCまとめ_m', rec:true},
+  {subj:'', topic:'企業経営理論作成ノート', res:'', state:'📖学習中', memo:'qz_01~13', rec:true}
+];
+function restorePlanSnapshot(){
+  const key=it=>(it.topic||'')+'¦'+(it.memo||'');
+  const existing=new Set([..._etb.querySelectorAll('tr')].map(tr=>(tr.querySelector('.ex-topic')?.value||'')+'¦'+(tr.querySelector('textarea')?.value||'')));
+  const missing=RESTORE_SNAPSHOT_0622.filter(it=>!existing.has(key(it)));
+  if(!missing.length){ alert('復元が必要な項目は見つかりませんでした（6/22の予定はすべて揃っています）。'); return; }
+  if(!confirm(missing.length+'件を 6/22 の保存内容から復元（追加）します。既存の行はそのまま・重複は追加しません。\n\n'+missing.map(m=>'・'+(m.subj?m.subj+'：':'')+m.topic).join('\n'))) return;
+  missing.forEach(it=>{
+    const eid=newEid();
+    _etb.insertAdjacentHTML('beforeend', extraRowHTML(it.subj, it.topic, it.res, '', it.state, it.memo, eid));
+    if(it.rec) localStorage.setItem('dash_rec_ex_'+eid,'1');
+  });
+  autofillSubjects(_etb);
+  saveExtraRows();
+  restoreExtraStates();
+  restorePrioStates(_etb);
+  renderTodayPlan();
+  alert(missing.length+'件を復元しました。');
+}
+document.getElementById('restorePlanBtn').onclick = restorePlanSnapshot;
+function loadExtraRows(){
+  try{ return JSON.parse(localStorage.getItem(EXTRA_KEY)||'[]'); } catch(e){ return []; }
+}
+// 初期復元
+const _savedExtra = loadExtraRows();
+if(_savedExtra.length){
+  _etb.innerHTML = _savedExtra.map(r=>extraRowHTML(r.subj,r.topic,r.res,r.reason,r.state,r.memo, r.eid||newEid(), r.asub)).join('');
+  saveExtraRows(); // 旧形式データに eid／理由欄を付与して保存し直す
+} else {
+  _etb.innerHTML = [
+    extraRowHTML('法務','苦手復習_105_02_商標法2回目を確認','×3 △10','S相当・15号/類否が最弱','🔁要再訪','', newEid()),
+    extraRowHTML('法務','苦手復習_105_01b_会社法機関設計2回目を確認','×1 △4','飛ばしSの穴','🔁要再訪','', newEid())
+  ].join('');
+  saveExtraRows();
+}
+autofillSubjects(_etb); saveExtraRows();   // 科目が空の行を論点・ファイル名から自動補完
+restoreExtraStates();
+restoreAfterInputs(document);   // 「○日後」入力の復元＋予定日到来分の本日推奨を自動ON
+
+// 🕒 午前/午後/夕方の目安チェック（localStorageに保存。当日分のみ・日付が変わると自動クリア）
+const TP_SLOTS_KEY='dash_tp_slots';
+function loadTpSlots(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(TP_SLOTS_KEY)||'{}');
+    const today=(DATA&&DATA.updated)||'';
+    if(raw.date!==today) return {};   // 日付が変わったらリセット
+    return raw.map||{};
+  }catch(e){ return {}; }
+}
+function saveTpSlots(map){
+  try{ localStorage.setItem(TP_SLOTS_KEY, JSON.stringify({date:(DATA&&DATA.updated)||'', map})); }catch(e){}
+}
+// 🕒 「昨日実施」マーク（日付リセットなし・手動でON/OFF）
+const TP_YEST_KEY='dash_tp_yest';
+function loadTpYest(){ try{ return JSON.parse(localStorage.getItem(TP_YEST_KEY)||'{}')||{}; }catch(e){ return {}; } }
+function saveTpYest(map){ try{ localStorage.setItem(TP_YEST_KEY, JSON.stringify(map)); }catch(e){} }
+// 🔧 科目の自動判定で行のキー（科目｜論点）が変わり、旧キー（論点のみ）の
+//    「昨日」「午前/午後/夕方」チェックが見えなくなる問題の救済。旧キーの値を新キーへ引き継ぐ。
+function migrateTpKeysForAutoSubj(){
+  const yest=loadTpYest();
+  let slotsRaw={}; try{ slotsRaw=JSON.parse(localStorage.getItem(TP_SLOTS_KEY)||'{}'); }catch(e){}
+  const slots=slotsRaw.map||{};
+  let yChanged=false, sChanged=false;
+  document.querySelectorAll('#extra-tasks tbody tr, #mock-tasks tbody tr, #problem-tasks tbody tr').forEach(tr=>{
+    const subj=(tr.querySelector('.ex-subj')?.value||'').trim();
+    const topic=(tr.querySelector('.ex-topic')?.value||'').trim();
+    const r=(tr.querySelector('input.rowrec')?.dataset.r)||'';
+    if(!subj) return;
+    const newKey = subj+'｜'+(topic||r||'');
+    const legacy = (topic||r||'');                 // 旧＝科目プレフィックス無し
+    if(newKey===legacy) return;
+    if(yest[legacy]!==undefined && yest[newKey]===undefined){ yest[newKey]=yest[legacy]; delete yest[legacy]; yChanged=true; }
+    if(slots[legacy]!==undefined && slots[newKey]===undefined){ slots[newKey]=slots[legacy]; delete slots[legacy]; sChanged=true; }
+  });
+  if(yChanged) saveTpYest(yest);
+  if(sChanged){ try{ localStorage.setItem(TP_SLOTS_KEY, JSON.stringify({date:slotsRaw.date||'', map:slots})); }catch(e){} }
+}
+// 📆 日付ロールオーバー：DATA.updated が前回から進んだら、本日実施→「昨日」へ送り、本日実施をクリア
+function rowItemKey(tr, cb){
+  let subj, topic;
+  if(tr.querySelector('.ex-topic')){ subj=(tr.querySelector('.ex-subj')?.value||'').trim(); topic=(tr.querySelector('.ex-topic')?.value||'').trim(); }
+  else { subj=(tr.querySelector('.tag')?.textContent||'').trim(); topic=(tr.children[1]?.textContent||'').trim(); }
+  const r=(cb&&cb.dataset.r)||'';
+  return (subj?subj+'｜':'')+(topic||r||'');
+}
+function rolloverIfNewDay(){
+  const cur=(DATA&&DATA.updated)||'';
+  const last=localStorage.getItem('dash_last_updated')||'';
+  if(!cur || last===cur) return;       // 日付が進んでいなければ何もしない
+  const yest={};                       // 「昨日」は直近に終えた分だけ＝毎回リセット
+  document.querySelectorAll('input.rowdone').forEach(cb=>{
+    if(!cb.checked) return;
+    const tr=cb.closest('tr'); if(!tr) return;
+    yest[rowItemKey(tr,cb)]=true;       // 本日実施→昨日へ
+    cb.checked=false; tr.classList.remove('done-row');   // 本日実施はクリア
+    if(cb.dataset.r) localStorage.removeItem('dash_dn_'+cb.dataset.r);
+  });
+  saveTpYest(yest);
+  localStorage.setItem('dash_last_updated', cur);
+}
+// 🎲 ランダム割当の対象スロット（午前/午後/夕方）。既定は全部ON
+const TP_POOL_KEY='dash_tp_pool';
+function loadTpPool(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(TP_POOL_KEY)||'null');
+    if(raw && typeof raw==='object') return {am:!!raw.am, pm:!!raw.pm, eve:!!raw.eve};
+  }catch(e){}
+  return {am:true, pm:true, eve:true};
+}
+function saveTpPool(p){ try{ localStorage.setItem(TP_POOL_KEY, JSON.stringify(p)); }catch(e){} }
+// 各予定行に、対象スロットのどれかをランダムで1つ割り当てる（既存の割当は上書き）
+function tpRandomAssign(){
+  const pool=loadTpPool();
+  const slots=['am','pm','eve'].filter(s=>pool[s]);
+  if(!slots.length){ alert('対象の時間帯（午前/午後/夕方）を1つ以上選んでください。'); return; }
+  const keys=[...document.querySelectorAll('#today-plan .tp-slots')].map(sb=>sb.querySelector('.tp-slot')?.dataset.key).filter(Boolean);
+  const map={};
+  keys.forEach(k=>{ const pick=slots[Math.floor(Math.random()*slots.length)]; map[k]={[pick]:true}; });
+  saveTpSlots(map);
+  renderTodayPlan();
+}
+// 📅 本日の実施予定：優先タスク表の⭐本日推奨ON行を主リスト。追加記録・問題実行は✓本日実施チェック済みを下段に別表示
+function renderTodayPlan(){
+  const host=document.getElementById('today-plan'); if(!host) return;
+  const col=(typeof subjColor==='function')?subjColor:(()=>'#94a3b8');
+  // 優先タスク表のみ（追加記録・問題実行行は除外）：⭐本日推奨ON → 主リスト
+  const items=[...document.querySelectorAll('input.rowrec')].filter(cb=>cb.checked).map(cb=>{
+    const tr=cb.closest('tr'); if(!tr) return null;
+    if(tr.querySelector('.ex-topic')) return null; // 追加記録・問題実行行は主リストに出さない
+    const topic=(tr.children[1]?.textContent||'').trim();
+    const subj =(tr.querySelector('.tag')?.textContent||'').trim();
+    const state= tr.querySelector('select.rowstate')?.value||'';
+    const ci=tr.querySelector('input.rowcomment');
+    const comment=((ci?.value||ci?.placeholder||'')).trim();   // コメント欄（未入力時は理由をヒント表示）
+    const memo=(tr.querySelector('textarea.rowmemo')?.value||'').trim();
+    if(!topic && !subj) return null;
+    return {r:cb.dataset.r||'',topic,subj,state,comment,memo,done:tr.classList.contains('done-row'),prio:shouldPrio(cb.dataset.r||'', appToday())};
+  }).filter(Boolean);
+  // 追加記録・問題実行：⭐本日推奨ON の行も主リストに含める（✓本日実施は下段に別表示）
+  const extraRec=[...document.querySelectorAll('#extra-tasks tbody tr, #mock-tasks tbody tr, #problem-tasks tbody tr')]
+    .map(tr=>{
+      const rec=tr.querySelector('input.rowrec');
+      if(!rec?.checked) return null;
+      const topic=(tr.querySelector('.ex-topic')?.value||'').trim();
+      const subj =(tr.querySelector('.ex-subj')?.value||'').trim();
+      const state= tr.querySelector('.ex-state')?.value||'';
+      const comment=(tr.querySelector('.ex-reason')?.value||'').trim();   // コメント欄
+      const memo=(tr.querySelector('textarea.rowmemo')?.value||'').trim();
+      if(!topic && !subj) return null;
+      const rid=tr.querySelector('input.rowrec')?.dataset.r||'';
+      return {r:rid,topic,subj,state,comment,memo,done:tr.querySelector('input.rowdone')?.checked||false,prio:shouldPrio(rid, appToday())};
+    }).filter(Boolean);
+  items.push(...extraRec);
+  // ⭐明日優先 の項目を先頭へ（安定ソート：それ以外は元の順序を保持）
+  items.sort((a,b)=>(b.prio?1:0)-(a.prio?1:0));
+  // 追加記録・問題実行：✓本日実施チェック済みを下段に表示
+  const extraDone=[...document.querySelectorAll('#extra-tasks tbody tr, #mock-tasks tbody tr, #problem-tasks tbody tr')]
+    .map(tr=>{
+      const done=tr.querySelector('input.rowdone');
+      if(!done?.checked) return null;
+      if(tr.querySelector('input.rowrec')?.checked) return null; // 推奨ONは上の主リストに出るので下段では除外
+      const topic=(tr.querySelector('.ex-topic')?.value||'').trim();
+      const subj =(tr.querySelector('.ex-subj')?.value||'').trim();
+      const state= tr.querySelector('.ex-state')?.value||'';
+      if(!topic && !subj) return null;
+      return {topic,subj,state};
+    }).filter(Boolean);
+  if(!items.length && !extraDone.length){
+    host.innerHTML='<div class="tp-empty">📅 <b>本日の実施予定</b>：優先タスク表で <b>⭐本日推奨</b> にチェックした行がここに出ます（前日「📅翌日も予定」にチェックした行は翌日自動でON）。</div>';
+    return;
+  }
+  const slots=loadTpSlots();
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const slotBox=(key)=>{
+    const k=esc(key); const cur=slots[key]||{};
+    const one=(s,label)=>'<label class="'+(cur[s]?'on':'')+'"><input type="checkbox" class="tp-slot" data-key="'+k+'" data-slot="'+s+'"'+(cur[s]?' checked':'')+'>'+label+'</label>';
+    return '<span class="tp-slots">'+one('am','午前')+one('pm','午後')+one('eve','夕方')+'</span>';
+  };
+  const yest=loadTpYest();
+  const yestBox=(key)=>{ const k=esc(key); const on=!!yest[key];
+    return '<label class="tp-yest'+(on?' on':'')+'" title="昨日やった"><input type="checkbox" class="tp-yest-cb" data-key="'+k+'"'+(on?' checked':'')+'>昨日</label>'; };
+  const pool=loadTpPool();
+  const poolBox=(s,label)=>'<label class="'+(pool[s]?'on':'')+'"><input type="checkbox" class="tp-pool" data-slot="'+s+'"'+(pool[s]?' checked':'')+'>'+label+'</label>';
+  const recDate=localStorage.getItem('dash_tp_recdate')||todayStr();
+  const recorded=localStorage.getItem('dash_tp_recorded')==='1';
+  // 1行分の描画（科目バッジはグループ見出しに出すのでここでは省略。午前/午後/夕方/昨日のキーは従来どおり）
+  const renderLi=(it)=>{
+    const memoVal=it.memo||'';
+    const fileUrl=memoVal?(memoVal.startsWith('/')?'file://'+encodeURI(memoVal):memoVal):'';
+    const topicText=it.topic||'(論点未記入)';
+    const topicEl=fileUrl?'<a href="'+esc(fileUrl)+'" target="_blank" style="color:inherit;text-decoration:underline dotted"><b>'+esc(topicText)+'</b></a>':'<b>'+esc(topicText)+'</b>';
+    return '<li class="'+(it.done?'tp-done':'')+(it.prio?' tp-prio':'')+'">'+
+    '<input type="checkbox" class="tp-check" data-r="'+it.r+'"'+(it.done?' checked':'')+' title="✓本日実施と連動">'+
+    (it.prio?'<span class="tp-prio-star" title="明日優先で指定した項目">⭐</span>':'')+
+    topicEl+
+    (it.r?' <button type="button" class="tp-jump" data-r="'+it.r+'" title="下の一覧の該当行へスクロール">⬇️</button>':'')+
+    (it.state?' <span class="tp-state" title="'+esc(it.state)+'">'+(Array.from(it.state)[0]||it.state)+'</span>':'')+
+    '<span class="tp-comment">'+(it.comment?'💬'+esc(it.comment):'')+'</span>'+
+    slotBox((it.subj?it.subj+'｜':'')+(it.topic||it.r||''))+
+    yestBox((it.subj?it.subj+'｜':'')+(it.topic||it.r||''))+
+    '<button type="button" class="tp-del" data-r="'+it.r+'" title="本日の実施予定から外す（⭐本日推奨・翌日も予定／N日後の設定も解除）">🗑</button>'+
+    '</li>';
+  };
+  // 🗂 科目ごとにまとめ、件数の多い科目順に並べる（同数は先に出てきた順／各科目内は⭐明日優先が先頭）
+  const NOSUBJ='（科目未設定）';
+  const gOrder=[], gMap=new Map();
+  items.forEach(it=>{ const k=it.subj||NOSUBJ; if(!gMap.has(k)){ gMap.set(k,[]); gOrder.push(k); } gMap.get(k).push(it); });
+  const orderedGroups=gOrder.slice().sort((a,b)=>{ const d=gMap.get(b).length-gMap.get(a).length; return d||(gOrder.indexOf(a)-gOrder.indexOf(b)); });
+  const groupsHtml=orderedGroups.map(k=>{
+    const grp=gMap.get(k); const c=(k===NOSUBJ)?'#94a3b8':col(k);
+    return '<div class="tp-group">'+
+      '<div class="tp-grouphead" style="border-left-color:'+c+'"><span class="tp-subj" style="background:'+c+'">'+esc(k)+'</span><span class="tp-groupcount">'+grp.length+'件</span></div>'+
+      '<ol class="tp-list">'+grp.map(renderLi).join('')+'</ol>'+
+    '</div>';
+  }).join('');
+  let html='<div class="tp-box">';
+  if(items.length){
+    html+='<div class="tp-head">📅 本日の実施予定（'+items.length+'件）'+
+        '<span class="tp-recwrap'+(recorded?' on':'')+'"><input type="date" class="tp-date" value="'+recDate+'" title="記録の対象日（当日以外も選べます）">'+
+        '<label class="'+(recorded?'on':'')+'"><input type="checkbox" class="tp-recorded"'+(recorded?' checked':'')+'>この日の記録</label>'+
+        (recorded?'<span class="tp-recbadge">✓記録済</span>':'')+'</span>'+
+        '<span class="tp-rand"><button type="button" class="tp-rand-btn" title="各予定に、下で選んだ時間帯のどれかをランダムで割り当てます">🎲 ランダム割当</button>'+
+        '<span class="tp-rand-pool">対象：'+poolBox('am','午前')+poolBox('pm','午後')+poolBox('eve','夕方')+'</span>'+
+        '<button type="button" class="tp-rand-clear" title="午前/午後/夕方のチェックを全部外します">クリア</button></span>'+
+      '</div>'+
+      groupsHtml;
+  }
+  if(extraDone.length){
+    html+='<div class="tp-extra-head">追加実施（'+extraDone.length+'件）</div>'+
+      '<ul class="tp-extra-list">'+extraDone.map(it=>
+        '<li>'+
+        (it.subj?'<span class="tp-subj" style="background:'+col(it.subj)+'">'+it.subj+'</span>':'')+
+        '<b>'+(it.topic||'')+'</b>'+
+        (it.state?' <span class="tp-state">'+it.state+'</span>':'')+
+        '</li>').join('')+'</ul>';
+  }
+  html+='</div>';
+  host.innerHTML=html;
+}
+// 予定一覧の即時更新＆連動（メイン表・追加記録を委譲で拾う）
+document.addEventListener('change', e=>{
+  const t=e.target; if(!t||!t.classList) return;
+  if(t.classList.contains('tp-date')){
+    // 記録対象日の変更 → 保存（別日選択時はリセット扱い）
+    localStorage.setItem('dash_tp_recdate', t.value||todayStr());
+    return;
+  }
+  if(t.classList.contains('tp-recorded')){
+    // 「この日の記録」チェック → 保存＆バッジ表示
+    t.checked ? localStorage.setItem('dash_tp_recorded','1') : localStorage.removeItem('dash_tp_recorded');
+    renderTodayPlan();
+    return;
+  }
+  if(t.classList.contains('tp-yest-cb')){
+    // 🕒 昨日実施マーク → 保存（日付リセットなし）
+    const key=t.dataset.key||''; const map=loadTpYest();
+    if(t.checked) map[key]=true; else delete map[key];
+    saveTpYest(map);
+    const lbl=t.closest('label'); if(lbl) lbl.classList.toggle('on', t.checked);
+    return;
+  }
+  if(t.classList.contains('tp-pool')){
+    // 🎲 ランダム割当の対象スロット選択 → 保存
+    const pool=loadTpPool(); pool[t.dataset.slot]=t.checked; saveTpPool(pool);
+    const lbl=t.closest('label'); if(lbl) lbl.classList.toggle('on', t.checked);
+    return;
+  }
+  if(t.classList.contains('tp-slot')){
+    // 🕒 午前/午後/夕方の目安チェック → localStorageへ保存（再描画せずラベル色だけ更新）
+    const key=t.dataset.key||'', slot=t.dataset.slot||'';
+    const map=loadTpSlots();
+    (map[key]=map[key]||{})[slot]=t.checked;
+    if(!t.checked){ delete map[key][slot]; if(!Object.keys(map[key]).length) delete map[key]; }
+    saveTpSlots(map);
+    const lbl=t.closest('label'); if(lbl) lbl.classList.toggle('on', t.checked);
+    return;
+  }
+  if(t.classList.contains('tp-check')){
+    // 予定一覧のチェック → 対応する表の「✓本日実施」をトグル（連動）
+    const r=t.dataset.r||'';
+    const done=document.querySelector('input.rowdone[data-r="'+(window.CSS&&CSS.escape?CSS.escape(r):r)+'"]');
+    if(done && done.checked!==t.checked){ done.checked=t.checked; done.dispatchEvent(new Event('change',{bubbles:true})); }
+    return; // dispatch した change が下の分岐で renderTodayPlan を呼ぶ
+  }
+  // ⭐本日推奨のON/OFF、または✓本日実施のON/OFFで予定一覧を再描画
+  if(t.classList.contains('rowrec')||t.classList.contains('rowdone')) renderTodayPlan();
+});
+// 🎲 ランダム割当／クリア ボタン（click）
+document.addEventListener('click', e=>{
+  const t=e.target; if(!t) return;
+  // ✕ 行削除ボタン（追加記録・問題実行・模試テーブル共通）
+  const delBtn = t.closest ? t.closest('[data-del]') : null;
+  if(delBtn){
+    const tr = delBtn.closest('tr');
+    if(tr){
+      const eid = tr.dataset.eid||'';
+      const rid = 'ex_'+eid;
+      localStorage.removeItem('dash_plan_'+rid); localStorage.removeItem('dash_rec_'+rid); localStorage.removeItem('dash_dn_'+rid);
+      localStorage.removeItem('dash_prio_'+rid); localStorage.removeItem('dash_after_'+rid);
+      const tblId = (tr.closest('table')||{}).id;
+      tr.remove();
+      if(tblId==='extra-tasks') saveExtraRows();
+      else if(tblId==='mock-tasks') saveMockRows();
+      else if(tblId==='problem-tasks') saveProblemRows();
+      renderTodayPlan();
+    }
+    return;
+  }
+  if(!t.classList) return;
+  if(t.classList.contains('tp-rand-btn')){ tpRandomAssign(); }
+  else if(t.classList.contains('tp-rand-clear')){ saveTpSlots({}); renderTodayPlan(); }
+  else if(t.classList.contains('after-clear')){
+    // この行のN日後設定だけ取り消す
+    const r=t.dataset.r||'';
+    const inp=t.closest('.after-wrap')?.querySelector('input.rowafter');
+    if(inp) inp.value='';
+    if(r) localStorage.removeItem('dash_after_'+r);
+    // その行の本日推奨を再評価（手動ON分だけ残す）
+    const rec=document.querySelector('input.rowrec[data-r="'+(window.CSS&&CSS.escape?CSS.escape(r):r)+'"]');
+    if(rec){
+      const manual=localStorage.getItem('dash_rec_'+r)==='1';
+      const on=manual || shouldAutoRec(r, appToday());
+      rec.checked=on; rec.closest('tr')?.classList.toggle('rec-row', on);
+      renderTodayPlan();
+    }
+  }
+  else if(t.classList.contains('tp-del')){
+    // 🗑 本日の実施予定から外す：⭐本日推奨をOFFにし、翌日も予定／N日後の設定も解除
+    const r=t.dataset.r||'';
+    if(r){
+      const sel='[data-r="'+(window.CSS&&CSS.escape?CSS.escape(r):r)+'"]';
+      const rec=document.querySelector('input.rowrec'+sel);
+      if(rec && rec.checked){ rec.checked=false; rec.dispatchEvent(new Event('change',{bubbles:true})); }
+      localStorage.removeItem('dash_plan_'+r);
+      localStorage.removeItem('dash_after_'+r);
+      const af=document.querySelector('input.rowafter'+sel); if(af) af.value='';
+    }
+    renderTodayPlan();
+  }
+  else if(t.classList.contains('tp-jump')){
+    // ⬇️ 該当行へスクロール＆ハイライト
+    const r=t.dataset.r||'';
+    const cb=document.querySelector('input.rowrec[data-r="'+(window.CSS&&CSS.escape?CSS.escape(r):r)+'"]');
+    const tr=cb&&cb.closest('tr');
+    if(tr){
+      tr.scrollIntoView({behavior:'smooth', block:'center'});
+      tr.classList.remove('jump-flash'); void tr.offsetWidth; tr.classList.add('jump-flash');
+      setTimeout(()=>tr.classList.remove('jump-flash'), 2200);
+    }
+  }
+});
+renderTodayPlan();
+
+document.getElementById('addExtraRow').onclick = ()=>{
+  _etb.insertAdjacentHTML('beforeend', extraRowHTML('','','','',STATES[0],'', newEid()));
+  saveExtraRows();
+};
+_etb.addEventListener('input', extraInputHandler(saveExtraRows));
+
+_etb.addEventListener('change', e=>{
+  const t=e.target;
+  if(t.classList.contains('rowdone')){
+    t.closest('tr').classList.toggle('done-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_dn_'+t.dataset.r,'1') : localStorage.removeItem('dash_dn_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowplan')){
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_plan_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_plan_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowprio')){
+    t.closest('tr')?.classList.toggle('prio-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_prio_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_prio_'+t.dataset.r); }
+    renderTodayPlan();
+  }
+  if(t.classList.contains('rowrec')){
+    t.closest('tr').classList.toggle('rec-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_rec_'+t.dataset.r,'1') : localStorage.removeItem('dash_rec_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowafter')) setAfter(t);
+});
+
+// 🧩 問題実行テーブル
+const PROBLEM_KEY = 'shindanshi_dashboard_problem_rows';
+const _ptb = document.querySelector('#problem-tasks tbody');
+let _pSeq = parseInt(localStorage.getItem('dash_p_seq')||'0',10)||0;
+function newPid(){ _pSeq++; localStorage.setItem('dash_p_seq', _pSeq); return 'p'+_pSeq; }
+function saveProblemRows(){
+  const rows=[..._ptb.querySelectorAll('tr')].map(tr=>({
+    eid: tr.dataset.eid||'',
+    subj: tr.querySelector('.ex-subj')?.value||'',
+    asub: tr.querySelector('.ex-subj')?.dataset.autosubj||'',
+    topic: tr.querySelector('.ex-topic')?.value||'',
+    res: tr.querySelector('.ex-res')?.value||'',
+    reason: tr.querySelector('.ex-reason')?.value||'',
+    state: tr.querySelector('.ex-state')?.value||STATES[0],
+    memo: tr.querySelector('textarea')?.value||''
+  }));
+  localStorage.setItem(PROBLEM_KEY, JSON.stringify(rows));
+}
+function loadProblemRows(){ try{ return JSON.parse(localStorage.getItem(PROBLEM_KEY)||'[]'); } catch(e){ return []; } }
+const _savedProblems = loadProblemRows();
+if(_savedProblems.length){
+  _ptb.innerHTML = _savedProblems.map(r=>extraRowHTML(r.subj,r.topic,r.res,r.reason,r.state,r.memo, r.eid||newPid(), r.asub)).join('');
+  saveProblemRows();
+}
+autofillSubjects(_ptb); saveProblemRows();   // 科目が空の行を自動補完
+_ptb.querySelectorAll('input.rowdone').forEach(cb=>{
+  if(cb.dataset.r && localStorage.getItem('dash_dn_'+cb.dataset.r)==='1'){ cb.checked=true; cb.closest('tr').classList.add('done-row'); }
+});
+_ptb.querySelectorAll('input.rowplan').forEach(cb=>{
+  if(cb.dataset.r && localStorage.getItem('dash_plan_'+cb.dataset.r)) cb.checked=true;
+});
+_ptb.querySelectorAll('input.rowrec').forEach(cb=>{
+  if(!cb.dataset.r) return;
+  const planD=localStorage.getItem('dash_plan_'+cb.dataset.r);
+  const autoRec=planD && planD < appToday();
+  const manual=localStorage.getItem('dash_rec_'+cb.dataset.r)==='1';
+  if(autoRec||manual){ cb.checked=true; cb.closest('tr').classList.add('rec-row'); }
+});
+document.getElementById('addProblemRow').onclick = ()=>{
+  _ptb.insertAdjacentHTML('beforeend', extraRowHTML('','','','',STATES[0],'', newPid()));
+  saveProblemRows();
+};
+_ptb.addEventListener('input', extraInputHandler(saveProblemRows));
+
+_ptb.addEventListener('change', e=>{
+  const t=e.target;
+  if(t.classList.contains('rowdone')){
+    t.closest('tr').classList.toggle('done-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_dn_'+t.dataset.r,'1') : localStorage.removeItem('dash_dn_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowplan')){
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_plan_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_plan_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowprio')){
+    t.closest('tr')?.classList.toggle('prio-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_prio_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_prio_'+t.dataset.r); }
+    renderTodayPlan();
+  }
+  if(t.classList.contains('rowrec')){
+    t.closest('tr').classList.toggle('rec-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_rec_'+t.dataset.r,'1') : localStorage.removeItem('dash_rec_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowafter')) setAfter(t);
+});
+
+// 📝 模試・直前まとめテーブル（追加記録と同構造・rid は ex_ プレフィックスを共有）
+const MOCK_KEY = 'shindanshi_dashboard_mock_rows';
+const _mtb = document.querySelector('#mock-tasks tbody');
+let _mSeq = parseInt(localStorage.getItem('dash_m_seq')||'0',10)||0;
+function newMid(){ _mSeq++; localStorage.setItem('dash_m_seq', _mSeq); return 'm'+_mSeq; }
+function saveMockRows(){
+  const rows=[..._mtb.querySelectorAll('tr')].map(tr=>({
+    eid: tr.dataset.eid||'',
+    subj: tr.querySelector('.ex-subj')?.value||'',
+    asub: tr.querySelector('.ex-subj')?.dataset.autosubj||'',
+    topic: tr.querySelector('.ex-topic')?.value||'',
+    res: tr.querySelector('.ex-res')?.value||'',
+    reason: tr.querySelector('.ex-reason')?.value||'',
+    state: tr.querySelector('.ex-state')?.value||STATES[0],
+    memo: tr.querySelector('textarea')?.value||''
+  }));
+  localStorage.setItem(MOCK_KEY, JSON.stringify(rows));
+}
+function loadMockRows(){ try{ return JSON.parse(localStorage.getItem(MOCK_KEY)||'[]'); } catch(e){ return []; } }
+// 🌱 種まき＆補正(v2)：経済学・直前 全範囲統合版を「模試・直前まとめ」に確保し、科目=経済学に直して今日の⭐優先に立てる（一度だけ）
+(function seedEconChokuzenV2(){
+  const FLAG='dash_seed_econ_chokuzen_v2';
+  if(localStorage.getItem(FLAG)) return;
+  const eid='seed_econ1', rid0='ex_'+eid;
+  const rows=loadMockRows();
+  const isEcon=r=>/qz_all\.直前_経済学|経済学_全範囲統合版/.test((r.topic||'')+' '+(r.memo||''));
+  // 該当行（手動追加含む）が複数あっても全て経済学へ補正
+  rows.filter(isEcon).forEach(r=>{ r.subj='経済学'; r.asub='0'; });
+  // 優先を立てる対象＝既存の該当行（無ければ新規作成）
+  let target=rows.find(isEcon);
+  if(!target){
+    target={ eid, subj:'経済学', asub:'0', topic:'直前 経済学 全範囲統合版（総ざらい）',
+      res:'', reason:'今日の⭐優先：経済まとめを総ざらい', state:'📖学習中',
+      memo:'スタディング直前/直前対策講座－経済学・経済政策_冊子/qz_all.直前_経済学_全範囲統合版_m.html' };
+    rows.push(target);
+  }
+  target.subj='経済学'; target.asub='0';   // 科目=経済学で固定（autosubj=0ロック）し情報への誤分類を上書き
+  localStorage.setItem(MOCK_KEY, JSON.stringify(rows));
+  // 行の rid（既存行は eid 由来）に対し、昨日付で優先＝appToday()基準で今日アクティブ
+  const rid='ex_'+(target.eid||eid);
+  localStorage.setItem('dash_prio_'+rid, addDays(appToday(), -1));
+  localStorage.setItem(FLAG,'1');
+})();
+const _savedMock = loadMockRows();
+if(_savedMock.length){
+  _mtb.innerHTML = _savedMock.map(r=>extraRowHTML(r.subj,r.topic,r.res,r.reason,r.state,r.memo, r.eid||newMid(), r.asub)).join('');
+  saveMockRows();
+}
+autofillSubjects(_mtb); saveMockRows();   // 科目が空の行を自動補完
+function restoreMockStates(){
+  const today=appToday();
+  _mtb.querySelectorAll('input.rowdone').forEach(cb=>{
+    if(cb.dataset.r && localStorage.getItem('dash_dn_'+cb.dataset.r)==='1'){ cb.checked=true; cb.closest('tr').classList.add('done-row'); }
+  });
+  _mtb.querySelectorAll('input.rowplan').forEach(cb=>{
+    if(cb.dataset.r && localStorage.getItem('dash_plan_'+cb.dataset.r)) cb.checked=true;
+  });
+  _mtb.querySelectorAll('input.rowrec').forEach(cb=>{
+    if(!cb.dataset.r) return;
+    const manual=localStorage.getItem('dash_rec_'+cb.dataset.r)==='1';
+    if(manual || shouldAutoRec(cb.dataset.r, today)){ cb.checked=true; cb.closest('tr').classList.add('rec-row'); }
+  });
+}
+restoreMockStates();
+restoreAfterInputs(_mtb);
+document.getElementById('addMockRow').onclick = ()=>{
+  _mtb.insertAdjacentHTML('beforeend', extraRowHTML('','','','',STATES[0],'', newMid()));
+  saveMockRows();
+};
+_mtb.addEventListener('input', extraInputHandler(saveMockRows));
+
+_mtb.addEventListener('change', e=>{
+  const t=e.target;
+  if(t.classList.contains('rowdone')){
+    t.closest('tr').classList.toggle('done-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_dn_'+t.dataset.r,'1') : localStorage.removeItem('dash_dn_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowplan')){
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_plan_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_plan_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowprio')){
+    t.closest('tr')?.classList.toggle('prio-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_prio_'+t.dataset.r, appToday()) : localStorage.removeItem('dash_prio_'+t.dataset.r); }
+    renderTodayPlan();
+  }
+  if(t.classList.contains('rowrec')){
+    t.closest('tr').classList.toggle('rec-row', t.checked);
+    if(t.dataset.r){ t.checked ? localStorage.setItem('dash_rec_'+t.dataset.r,'1') : localStorage.removeItem('dash_rec_'+t.dataset.r); }
+  }
+  if(t.classList.contains('rowafter')) setAfter(t);
+});
+// ↪ 追加記録の中から模試・直前まとめ関連の行を模試テーブルへ移動
+function isMockRow(topic, memo){
+  const s=(topic||'')+' '+(memo||'');
+  return /模試|直前|ステップアップ/.test(s);
+}
+function collectMockTargets(){
+  return [..._etb.querySelectorAll('tr')].filter(tr=>
+    isMockRow(tr.querySelector('.ex-topic')?.value||'', tr.querySelector('textarea')?.value||''));
+}
+document.getElementById('moveMockBtn').onclick = ()=>{
+  const targets=collectMockTargets();
+  if(!targets.length){ alert('追加記録の中に模試・直前まとめ関連の行は見つかりませんでした。'); return; }
+  if(!confirm(targets.length+'件を「模試・直前まとめ」へ移動します。\n（チェック状態はそのまま保持されます）\n\n'+
+    targets.map(tr=>'・'+(tr.querySelector('.ex-topic')?.value||'')).join('\n'))) return;
+  targets.forEach(tr=>_mtb.appendChild(tr));  // DOMごと移動＝data-r/チェック状態は保持
+  saveExtraRows(); saveMockRows();
+  renderTodayPlan();
+  alert(targets.length+'件を移動しました。');
+};
+// 初回のみ：追加記録にある模試・直前関連を自動で模試テーブルへ移動
+if(localStorage.getItem('dash_mock_migrated_v1')!=='1'){
+  const targets=collectMockTargets();
+  if(targets.length){
+    targets.forEach(tr=>_mtb.appendChild(tr));
+    saveExtraRows(); saveMockRows();
+  }
+  localStorage.setItem('dash_mock_migrated_v1','1');
+}
+// ⭐明日優先 のチェック状態を全テーブルまとめて復元（全テーブル構築後に1回）
+restorePrioStates(document);
+// 🔧 科目自動判定で変わったキーの「昨日」「時間帯」チェックを旧キーから救済（全テーブル構築後に1回）
+migrateTpKeysForAutoSubj();
+// 📆 日付が進んでいれば本日実施→昨日へロール（全テーブル構築後に1回）
+rolloverIfNewDay();
+// 📅 昨日チェック補完：rolloverが拾えなかった分をDATA.yestInitから注入
+(function applyYestInit(){
+  if(!DATA.yestInit) return;
+  const last=localStorage.getItem('dash_last_updated')||'';
+  if(last !== DATA.yestInit.forUpdated) return;
+  const yest=loadTpYest();
+  let changed=false;
+  DATA.yestInit.keys.forEach(k=>{ if(!yest[k]){ yest[k]=true; changed=true; } });
+  if(changed) saveTpYest(yest);
+})();
+// 模試テーブル構築後に必ず本日の実施予定を再描画（移行有無に関わらず）
+renderTodayPlan();
+
+// 💾 メモをファイルに保存（Claudeが読む dashboard_memos.json）
+// 初回に保存フォルダ（=まとめ）を選ぶと、以降はダイアログ無しでそこへ書き込む。
+function flashSave(msg){ document.querySelectorAll('.js-save').forEach(b=>{ const o=b.dataset.o||b.textContent; b.dataset.o=o; b.textContent=msg; setTimeout(()=>b.textContent=o,2000); }); }
+
+// 選んだフォルダのハンドルをIndexedDBに永続化
+function idbOpen(){ return new Promise((res,rej)=>{ const o=indexedDB.open('dash_fs',1);
+  o.onupgradeneeded=()=>o.result.createObjectStore('kv'); o.onsuccess=()=>res(o.result); o.onerror=()=>rej(o.error); }); }
+async function idbSet(k,v){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction('kv','readwrite');
+  tx.objectStore('kv').put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function idbGet(k){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction('kv','readonly');
+  const rq=tx.objectStore('kv').get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+
+async function ensurePerm(h){
+  const opt={mode:'readwrite'};
+  if((await h.queryPermission(opt))==='granted') return true;
+  if((await h.requestPermission(opt))==='granted') return true;
+  return false;
+}
+async function getSaveDir(forcePick){
+  if(!forcePick && window._dir) return window._dir;
+  if(!forcePick){
+    const saved=await idbGet('dir');
+    if(saved && await ensurePerm(saved)){ window._dir=saved; return saved; }
+  }
+  // フォルダ選択（まとめ を選んでもらう）。startInでデスクトップ起点に
+  const h=await window.showDirectoryPicker({id:'matome', mode:'readwrite', startIn:'desktop'});
+  await idbSet('dir',h); window._dir=h; return h;
+}
+// 学習日：深夜4時までは前日扱い（study-day はAM4:00ロールオーバー）
+function studyDate(){
+  const d=new Date();
+  if(d.getHours()<4) d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function buildJSON(){
+  const sd=studyDate();
+  const rows=[];
+  DATA.tasks.forEach(t=>{
+    const cb=document.querySelector('input.rowdone[data-r="'+t.r+'"]');  // その場のチェック状態のみ（全テーブル横断）
+    if(!cb || !cb.checked) return;
+    const v=(localStorage.getItem(tmKey(t.r))||'').trim();
+    const cm=(localStorage.getItem('dash_cm_'+t.r)||'').trim();
+    const st=localStorage.getItem(stKey(t.r))||STATES[0];
+    rows.push({ '#':t.r, 論点:t.topic, 科目:t.subj, 状態:st, 確認:t.res, コメント:cm||t.reason, ファイル:v });
+  });
+  const mapRows = tb => [...tb.querySelectorAll('tr')]
+    .map(tr=>({ 科目:tr.querySelector('.ex-subj')?.value||'', 論点:tr.querySelector('.ex-topic')?.value||'', 確認:tr.querySelector('.ex-res')?.value||'', 理由:tr.querySelector('.ex-reason')?.value||'', 状態:tr.querySelector('.ex-state')?.value||'', メモ:tr.querySelector('textarea')?.value||'', 本日実施:tr.querySelector('.rowdone')?.checked||false, 本日推奨:tr.querySelector('.rowrec')?.checked||false, 翌日予定:tr.querySelector('.rowplan')?.checked||false }))
+    .filter(r=>r.論点.trim());
+  const extraRows = mapRows(_etb);
+  const mockRows = mapRows(_mtb);
+  const problemRows = mapRows(_ptb);
+  return JSON.stringify({ savedAt:new Date().toISOString(), 学習日:sd, 本日実施件数:rows.length, 全体メモ:(memo.value||'').trim(), やることメモ:(document.getElementById('todo-memo')?.value||'').trim(), 追加記録:extraRows.length?extraRows:null, 模試直前まとめ:mockRows.length?mockRows:null, 問題実行:problemRows.length?problemRows:null, 本日の記録:rows }, null, 2);
+}
+async function doSave(forcePick){
+  const json=buildJSON();
+  if(window.showDirectoryPicker){
+    try{
+      const dir=await getSaveDir(forcePick);
+      const fh=await dir.getFileHandle('dashboard_memos.json',{create:true});
+      const w=await fh.createWritable(); await w.write(json); await w.close();
+      flashSave(`✓ ${dir.name}/ に保存`); return;
+    }catch(err){ if(err.name==='AbortError') return; }
+  }
+  // 非対応ブラウザ（Safari等）はダウンロード
+  const blob=new Blob([json],{type:'application/json'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='dashboard_memos.json'; a.click(); URL.revokeObjectURL(a.href);
+  flashSave('✓ 書き出しました（DL）');
+}
+document.querySelectorAll('.js-save').forEach(b=> b.onclick=()=>doSave(false));
+document.querySelectorAll('.js-pickdir').forEach(b=> b.onclick=()=>doSave(true));
+</script>
+</body>
+</html>

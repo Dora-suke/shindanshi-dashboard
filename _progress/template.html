@@ -1,0 +1,745 @@
+<style>
+:root{--bg:#f4f5f7;--panel:#ffffff;--ink:#1c2430;--muted:#5b6675;--line:#e2e6ec;
+  --accent:#4f46e5;--quiz:#2563eb;--fill:#059669;--track:#dfe4ea;}
+@media (prefers-color-scheme:dark){:root{--bg:#12161d;--panel:#1a212b;--ink:#e6ebf2;--muted:#95a1b2;
+  --line:#29323f;--accent:#8b86f5;--quiz:#6ea8ff;--fill:#4cd6a0;--track:#2b3542;}}
+:root[data-theme="dark"]{--bg:#12161d;--panel:#1a212b;--ink:#e6ebf2;--muted:#95a1b2;--line:#29323f;
+  --accent:#8b86f5;--quiz:#6ea8ff;--fill:#4cd6a0;--track:#2b3542;}
+:root[data-theme="light"]{--bg:#f4f5f7;--panel:#ffffff;--ink:#1c2430;--muted:#5b6675;--line:#e2e6ec;
+  --accent:#4f46e5;--quiz:#2563eb;--fill:#059669;--track:#dfe4ea;}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.55;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px}
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hd{max-width:1000px;margin:0 auto;padding:12px 20px 0;position:relative}
+.hdtoggle{position:absolute;top:10px;right:16px;appearance:none;border:1px solid var(--line);background:var(--panel);
+  color:var(--muted);font:inherit;font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 11px;cursor:pointer;z-index:3;white-space:nowrap}
+h1,.sub{padding-right:70px}
+.hdtoggle:hover{border-color:var(--muted);color:var(--ink)}
+.hdtoggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hd.collapsed h1,.hd.collapsed .sub{display:none}
+.hd.collapsed{padding:0 92px 0 20px}
+.hd.collapsed .tabbar{margin-top:0}
+.hd.collapsed .hdtoggle{top:2px}
+h1{font-size:1.18rem;margin:0}.sub{color:var(--muted);font-size:.76rem;margin:2px 0 0}
+.tabbar{display:flex;flex-wrap:wrap;gap:3px 2px;margin-top:8px}
+.tabbar::-webkit-scrollbar{height:0}
+.tabbtn{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;
+  font-size:.78rem;padding:6px 9px;cursor:pointer;border-bottom:2px solid transparent;border-radius:7px 7px 0 0;white-space:nowrap;flex:none}
+.tabbtn:hover{color:var(--ink);background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.tabbtn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tabbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.panel{display:none}.panel.active{display:block}
+.bar{height:8px;border-radius:5px;background:var(--track);overflow:hidden;display:flex}
+.bar i{height:100%}.bar .q{background:var(--quiz)}.bar .f{background:var(--fill)}
+.pct{font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+.frac{color:var(--muted);font-size:.72rem;font-variant-numeric:tabular-nums}
+.frac b{color:var(--ink);font-weight:600}
+.hero{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:11px 18px;margin:16px 0 14px;
+  display:grid;grid-template-columns:auto auto 1fr;gap:16px;align-items:center}
+@media(max-width:560px){.hero{grid-template-columns:auto auto;gap:12px 16px}.herostat{grid-column:1/-1}}
+.gauge{--p:0;width:72px;height:72px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--track) 0)}
+.gauge .lb.gcc{color:var(--fill);font-weight:700}
+.gauge .in{width:54px;height:54px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center}
+.gauge .big{font-size:1.12rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.gauge .lb{font-size:.52rem;color:var(--muted);margin-top:1px}
+.herostat{min-width:0}
+.herostat .row{display:flex;align-items:center;gap:10px;margin:3px 0}
+.herostat .lg{font-size:.74rem;color:var(--muted);min-width:48px}
+.herostat .bar{flex:1;height:7px}
+.herostat .v{font-size:.78rem;font-variant-numeric:tabular-nums;min-width:78px;text-align:right;color:var(--ink)}
+.herostat .ccmini{font-size:.76rem;font-weight:700;font-variant-numeric:tabular-nums}
+.herostat .ccmini .cctot{color:var(--muted);font-size:.72rem;font-weight:400}
+.heronote{grid-column:1/-1;color:var(--muted);font-size:.72rem;border-top:1px dashed var(--line);padding-top:7px;margin-top:0}
+.heronote b{color:var(--ink)}
+/* カテゴリ（論点タブ）数ベースの進捗 */
+.ccsum{font-size:.82rem;margin:2px 0 10px;color:var(--muted)}
+.ccsum b{color:var(--ink);font-size:1rem}
+.cc-done{color:var(--fill);font-weight:800}
+.cc-wip{color:#d97706;font-weight:700}
+.cc-todo{color:var(--muted);font-weight:700}
+.ccrow{display:grid;grid-template-columns:118px 1fr auto;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.ccrow:last-child{border-bottom:0}
+.ccname{font-weight:600;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ccbar{height:15px;border-radius:5px;background:var(--track);overflow:hidden;display:flex}
+.ccbar i{height:100%}.ccbar .cc-d{background:var(--fill)}.ccbar .cc-w{background:#f59e0b}
+.ccnum{font-size:.82rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ccnum .cctot{color:var(--muted);font-size:.72rem;margin-left:2px}
+.cclgd{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}
+.cclgd i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.cclgd .l-d{background:var(--fill)}.cclgd .l-w{background:#f59e0b}.cclgd .l-t{background:var(--track);border:1px solid var(--line)}
+@media(max-width:480px){.ccrow{grid-template-columns:78px 1fr auto;gap:7px}.ccname{font-size:.8rem}.ccnum{font-size:.76rem;text-align:right}.ccnum .cctot{display:block;margin:0}}
+.sec-h{font-size:.82rem;font-weight:700;color:var(--muted);margin:20px 2px 8px;letter-spacing:.02em}
+.diff{background:color-mix(in srgb,var(--fill) 8%,var(--panel));border:1px solid color-mix(in srgb,var(--fill) 35%,var(--line));
+  border-radius:14px;padding:12px 16px;margin:16px 0 4px}
+.diff.none{background:var(--panel);border-color:var(--line)}
+.diffhd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.difftag{font-size:.66rem;font-weight:800;color:#fff;background:var(--fill);border-radius:20px;padding:2px 10px}
+.diff.none .difftag{background:var(--muted)}
+.diffmain{font-weight:800;font-size:.95rem;font-variant-numeric:tabular-nums}
+.diffdelta{color:var(--fill);font-weight:800}
+.diffsub{color:var(--muted);font-size:.76rem;margin-left:auto}
+.difftabs{margin-top:8px;display:grid;gap:3px}
+.difftab{font-size:.78rem;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.difftab .dt-s{font-size:.66rem;font-weight:700;color:var(--accent)}
+.difftab .dt-n{font-weight:600}
+.difftab .dt-d{color:var(--fill);font-weight:700;font-variant-numeric:tabular-nums}
+.difftab .dt-p{color:var(--muted);font-size:.72rem}
+.rankcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 16px}
+.rankrow{display:flex;flex-wrap:wrap;gap:8px 18px;padding:8px 0}
+.rkcell{display:flex;align-items:center;gap:8px;min-width:200px;flex:1 1 200px}
+.rkcell .pct{font-weight:700;min-width:38px;text-align:right}
+.rkcell .frac{color:var(--muted);font-size:.7rem;min-width:52px}
+.rkmx{border-collapse:collapse;width:100%;font-size:.78rem;margin:2px 0}
+.rkmx th,.rkmx td{border:1px solid var(--line);padding:4px 6px;text-align:center}
+.rkmx td.mxsubj{text-align:left;white-space:nowrap;font-weight:600;background:var(--panel)}
+.rkmx td.mxtot{font-weight:700}
+.rkmx td.na{color:var(--muted)}
+.rrow{display:grid;grid-template-columns:20px 120px 1fr 92px 46px;gap:12px;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--line)}
+.rrow:last-child{border-bottom:0}
+.rk{font-size:.66rem;font-weight:700;color:#fff;background:var(--accent);border-radius:50%;width:20px;height:20px;display:grid;place-items:center}
+.rnm{font-weight:600;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .pct{color:var(--accent)}
+.heat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;overflow-x:auto}
+.hrow{display:grid;grid-template-columns:132px 1fr;gap:12px;align-items:center;margin:7px 0}
+.hlab{font-size:.8rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cells{display:flex;flex-wrap:wrap;gap:4px}
+.cell{width:25px;height:25px;border-radius:5px;display:grid;place-items:center;font-size:.58rem;font-weight:700;
+  color:#0d1b12;border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);cursor:default}
+.cell.dark{color:#eafff4}
+.legendrow{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--muted);margin-top:10px}
+.scale{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--track),var(--fill))}
+.cat{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.cathead{display:flex;align-items:center;gap:13px;padding:13px 18px}
+.rank{font-size:.66rem;font-weight:700;color:#fff;background:var(--accent);border-radius:50%;
+  width:21px;height:21px;display:grid;place-items:center;flex:none}
+.catname{font-size:1rem;font-weight:700}.cathead .frac{margin-left:auto}
+.cathead .pct{font-size:1.12rem;color:var(--accent);min-width:46px}
+.catbar{padding:0 18px 12px}.filewrap{padding:2px 12px 12px}
+details.file,details.tab{margin:5px 0}
+details.file>summary,details.tab>summary{list-style:none;cursor:pointer;display:grid;
+  grid-template-columns:14px 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border-radius:9px}
+summary::-webkit-details-marker{display:none}
+details.file>summary:hover,details.tab>summary:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+details.file[open]>summary{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.tw{display:grid;grid-template-columns:100px auto;gap:8px;align-items:center;min-width:0}
+.tw .bar{width:100px}
+.caret{color:var(--muted);font-size:.75rem;transition:transform .15s}
+details[open]>summary .caret{transform:rotate(90deg)}
+.fname{font-weight:600;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file>summary .pct{font-size:.98rem;min-width:42px}
+.tabbox{padding:2px 6px 8px 22px}
+.tabname{font-weight:600;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab>summary .pct{font-size:.9rem;min-width:40px}
+.cards{padding:2px 4px 6px 30px;display:grid;gap:5px}
+.card{display:grid;grid-template-columns:1fr 90px auto auto;gap:9px;align-items:center}
+.cname{font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .bar{width:90px;height:6px}.card .pct{font-size:.78rem;min-width:38px;font-weight:700}
+.card .frac{font-size:.68rem;white-space:nowrap}
+.z{opacity:.5}
+/* priority tab */
+.prbar{display:flex;align-items:center;gap:10px;margin:18px 0 8px;flex-wrap:wrap}
+.prbar .lbl{font-size:.78rem;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{appearance:none;border:0;background:var(--panel);color:var(--muted);font:inherit;font-size:.78rem;
+  font-weight:700;padding:6px 13px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.prcat{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.prhead{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.prhead .rank{flex:none}.prhead .catname{font-size:.98rem}
+.prhead .pct{margin-left:auto;color:var(--accent);font-size:1.05rem}
+.prlist{padding:4px 8px 10px}
+.pritem{display:grid;grid-template-columns:26px 1fr 96px 92px 44px;gap:11px;align-items:center;padding:7px 8px;border-radius:8px}
+.pritem:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.pnum{font-size:.72rem;font-weight:700;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.pmain{min-width:0}
+.ptitle{font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pctx{font-size:.68rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pritem .bar{width:96px;height:7px}
+.pritem .frac{font-size:.68rem;white-space:nowrap}
+.pritem .pct{font-size:.82rem;min-width:40px}
+.pritem.hot .pnum{color:#c2410c}
+/* rank-grouped view */
+.rkgroup{margin:0 0 6px}
+.rkband{display:flex;align-items:center;gap:10px;position:sticky;top:0;padding:8px 4px 6px;background:var(--bg)}
+.rkbadge{font-weight:800;font-size:.82rem;color:#fff;border-radius:7px;min-width:26px;height:24px;display:grid;place-items:center;padding:0 6px}
+.rk-S{background:#dc2626}.rk-A{background:#ea580c}.rk-B{background:#16a34a}.rk-C{background:#2563eb}.rk-D{background:#64748b}.rk-E{background:#94a3b8}
+.rklabel{font-size:.78rem;color:var(--muted);font-weight:700}
+.topicrow{display:grid;grid-template-columns:22px 34px 1fr 96px 92px 44px;gap:11px;align-items:center;
+  padding:8px;border-radius:9px;background:var(--panel);border:1px solid var(--line);margin:4px 0}
+.topicrow.hot{border-color:color-mix(in srgb,#ea580c 40%,var(--line))}
+.minchk{display:grid;place-items:center;cursor:pointer;margin:0}
+.minchk input{width:16px;height:16px;cursor:pointer;accent-color:var(--fill);margin:0}
+.topicrow.mindone,.growrow.mindone{background:color-mix(in srgb,var(--fill) 11%,var(--panel));border-color:color-mix(in srgb,var(--fill) 45%,var(--line))}
+.minbadge{display:inline-block;font-size:.6rem;font-weight:800;color:#fff;background:var(--fill);border-radius:7px;padding:0 6px;margin-left:6px;vertical-align:1px}
+.pct-min{color:var(--fill)}
+.cospa{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.95rem;font-weight:700;justify-self:center}
+.cs-d{background:#dcfce7;color:#15803d}.cs-c{background:#ccfbf1;color:#0f766e}
+.cs-t{background:#fef3c7;color:#b45309}.cs-x{background:#fee2e2;color:#b91c1c}
+.tmain{min-width:0}.tnm{font-size:.86rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tsrc{font-size:.68rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topicrow .bar{width:96px;height:7px}.topicrow .frac{font-size:.68rem;white-space:nowrap}.topicrow .pct{font-size:.82rem;min-width:40px}
+.growrow{display:grid;grid-template-columns:22px 26px 28px 1fr 96px 92px 44px;gap:10px;align-items:center;
+  padding:8px;border-radius:9px;background:var(--panel);border:1px solid var(--line);margin:4px 0}
+.growrow.hot{border-color:color-mix(in srgb,#ea580c 40%,var(--line))}
+.growrow .rkbadge{min-width:24px;height:22px;font-size:.74rem;border-radius:6px}
+.gsubj{font-size:.66rem;color:var(--accent);font-weight:700}
+.gseg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:6px}
+.gseg button{appearance:none;border:0;background:var(--panel);color:var(--muted);font:inherit;font-size:.76rem;font-weight:700;padding:5px 12px;cursor:pointer}
+.gseg button.on{background:var(--accent);color:#fff}
+.rfil{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:10px 0 2px}
+.rfil .lb{font-size:.72rem;color:var(--muted);margin-right:2px}
+.rfchip{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--muted);
+  font:inherit;font-size:.74rem;font-weight:800;border-radius:20px;padding:3px 12px;cursor:pointer;transition:all .12s}
+.rfchip:hover{border-color:var(--muted)}
+.rfchip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.rkhint{font-size:.73rem;color:var(--muted);margin:16px 0 2px;line-height:1.7}
+.rkhint .cospa{display:inline-grid;width:20px;height:20px;font-size:.8rem;vertical-align:-5px;margin:0 2px}
+.logday{margin:14px 0 6px}
+.logday-h{display:flex;align-items:baseline;gap:10px;font-weight:800;font-size:.98rem;position:sticky;top:0;background:var(--bg);padding:6px 2px;z-index:1}
+.logday-h .dt{color:var(--accent)}
+.logday-h .sum{color:var(--fill)}
+.logday-h .rel{font-size:.68rem;font-weight:800;color:#fff;background:var(--accent);border-radius:20px;padding:2px 10px}
+.logtabs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px}
+.logtab{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:inherit;font-size:.74rem;font-weight:700;border-radius:20px;padding:4px 12px;cursor:pointer;white-space:nowrap}
+.logtab:hover{color:var(--ink);border-color:var(--muted)}
+.logtab.active{color:#fff;background:var(--accent);border-color:var(--accent)}
+.logtab:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ntopic{font-size:.82rem;font-weight:800;color:#fff;background:var(--accent);border-radius:10px;padding:1px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.catsum{font-size:.7rem;font-weight:700;color:var(--fill);background:color-mix(in srgb,var(--fill) 13%,transparent);border:1px solid color-mix(in srgb,var(--fill) 30%,var(--line));border-radius:10px;padding:1px 8px;white-space:nowrap}
+.cbadge{font-size:.62rem;font-weight:800;border-radius:8px;padding:1px 6px;margin-left:2px;white-space:nowrap}
+.cb-done{color:#fff;background:var(--fill)}
+.cb-start{color:#7c4a03;background:#fcd775}
+.logent{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 14px;margin:6px 0}
+.logent-h{display:flex;align-items:baseline;gap:10px;font-size:.76rem;color:var(--muted);margin-bottom:4px;flex-wrap:wrap}
+.logent-h .d{color:var(--fill);font-weight:800;font-size:.85rem}
+.logrow{font-size:.8rem;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:2px 0}
+.logrow .s{font-size:.66rem;font-weight:700;color:var(--accent)}
+.logrow .n{font-weight:600}
+.logrow .lf{font-size:.66rem;color:var(--muted)}
+.logrow .dd{color:var(--fill);font-weight:700}
+.logrow .pp{color:var(--muted);font-size:.72rem}
+.logcard{font-size:.72rem;color:var(--muted);padding-left:18px;line-height:1.5}
+.logcols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start;margin-top:8px}
+@media(max-width:760px){.logcols{grid-template-columns:1fr}}
+.logcol{min-width:0;background:color-mix(in srgb,var(--accent) 3%,transparent);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.logcol-h{display:flex;align-items:baseline;gap:8px;font-weight:800;font-size:.9rem;margin-bottom:6px;flex-wrap:wrap}
+.logcol-h .dt{color:var(--accent)}
+.logcol-h .sum{color:var(--fill)}
+.logcol-h .rel{font-size:.62rem;font-weight:800;color:#fff;background:var(--accent);border-radius:20px;padding:1px 8px}
+.logcol .logent{padding:7px 9px}
+.logcol .logent-h{font-size:.7rem;gap:6px}
+.logcol .logrow{font-size:.75rem;gap:5px}
+.logcol .logrow .lf{display:block;width:100%;margin-left:0}
+.foot{text-align:center;color:var(--muted);font-size:.72rem;margin-top:22px}
+button.toggle{position:fixed;bottom:18px;right:18px;z-index:20;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);border-radius:22px;padding:8px 15px;font-size:.8rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+button.toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+<header class="top"><div class="hd">
+  <button class="hdtoggle" id="hdtoggle" title="見出しの表示/非表示">▲ 隠す</button>
+  <h1>直前ノート 学習進捗ダッシュボード</h1>
+  <p class="sub">達成率＝(クリアしたクイズ＋固定した穴埋め)÷(総クイズ＋総穴埋め)／クイズ＝⚡チェック＋論点チェック(○×の非表示=済)・分母はノート元々の問題数で固定</p>
+  <div class="tabbar" role="tablist" id="tabbar">
+    <button class="tabbtn active" id="t-pr" role="tab">総合優先</button>
+    <button class="tabbtn" id="t-ov" role="tab">俯瞰</button>
+    <button class="tabbtn" id="t-dt" role="tab">科目別 詳細</button>
+  </div>
+</div></header>
+<div class="wrap">
+  <div id="diffbar"></div>
+  <section class="panel active" id="p-pr"></section>
+  <section class="panel" id="p-ov"></section>
+  <section class="panel" id="p-dt"><div id="list"></div><p class="foot" id="foot"></p></section>
+  <div id="subjpanels"></div>
+</div>
+<button class="toggle" id="tg" style="display:none">すべて展開</button>
+<script>
+var DATA=__DATA__;
+var DIFF=__DIFF__;
+var LOG=__LOG__;
+function esc(s){return (s+'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+/* 見出しヘッダーの表示/非表示（状態を保存） */
+(function(){
+  var HDKEY='dashHdCollapsed',hd=document.querySelector('.hd'),btn=document.getElementById('hdtoggle');
+  function apply(){var c=localStorage.getItem(HDKEY)==='1';hd.classList.toggle('collapsed',c);btn.textContent=c?'▼ 見出し':'▲ 隠す';}
+  btn.addEventListener('click',function(){
+    var c=localStorage.getItem(HDKEY)==='1';try{localStorage.setItem(HDKEY,c?'0':'1');}catch(e){}apply();
+  });
+  apply();
+})();
+function bar(dq,df,den,h){return '<div class="bar"'+(h?' style="height:'+h+'"':'')+'><i class="q" style="width:'+(den?dq/den*100:0)+'%"></i><i class="f" style="width:'+(den?df/den*100:0)+'%"></i></div>';}
+function frac(dq,q,df,b){return 'ク<b>'+dq+'</b>/'+q+' 穴<b>'+df+'</b>/'+b;}
+function pctOf(a,b){return b?Math.round(a/b*100):0;}
+
+var cats=[];var G={dq:0,q:0,df:0,blk:0},tabTot=0,tabZero=0;
+for(var cat in DATA){
+  var files=DATA[cat];var s={dq:0,q:0,df:0,blk:0};
+  files.forEach(function(f){s.dq+=f.dq;s.q+=f.q;s.df+=f.df;s.blk+=f.blk;
+    f.tabs.forEach(function(t){tabTot++;if((t.dq+t.df)===0)tabZero++;});});
+  s.name=cat;s.files=files;s.pct=pctOf(s.dq+s.df,s.q+s.blk);
+  cats.push(s);G.dq+=s.dq;G.q+=s.q;G.df+=s.df;G.blk+=s.blk;
+}
+cats.sort(function(a,b){return b.pct-a.pct;});
+var gpct=pctOf(G.dq+G.df,G.q+G.blk);
+
+/* 差分バー（全タブ共通・ヘッダー直下に常時表示） */
+if(DIFF){
+  var dd=DIFF.na-DIFF.oa, changed=DIFF.tabs&&DIFF.tabs.length;
+  var dh='<div class="diff'+(changed?'':' none')+'">'
+    +'<div class="diffhd"><span class="difftag">前回からの変化</span>'
+    +(changed?('<span class="diffmain">達成 '+DIFF.oa+' → '+DIFF.na+' <span class="diffdelta">('+(dd>=0?'+':'')+dd+')</span></span>')
+              :('<span class="diffmain" style="color:var(--muted)">変化なし</span>'))
+    +'<span class="diffsub">'+pctOf(DIFF.oa,DIFF.ob)+'% → '+pctOf(DIFF.na,DIFF.nb)+'%'
+    +(DIFF.subs&&DIFF.subs.length?'　｜　'+DIFF.subs.map(function(s){return esc(s.name)+' +'+s.d;}).join(' / '):'')
+    +'</span></div>';
+  if(changed){
+    dh+='<div class="difftabs">';
+    DIFF.tabs.forEach(function(t){
+      var seg=[];if(t.ddq)seg.push('クイズ'+(t.ddq>0?'+':'')+t.ddq);if(t.ddf)seg.push('穴埋め'+(t.ddf>0?'+':'')+t.ddf);
+      dh+='<div class="difftab"><span class="dt-s">'+esc(t.subj)+'</span>'
+        +'<span class="dt-n">'+esc(t.tab)+'</span>'
+        +'<span class="dt-d">'+seg.join('・')+'</span>'
+        +'<span class="dt-p">'+t.op+'%→'+t.np+'%</span></div>';
+    });
+    dh+='</div>';
+  }
+  dh+='</div>';
+  document.getElementById('diffbar').innerHTML=dh;
+}
+
+var ov=document.getElementById('p-ov');
+/* ===== カテゴリ（論点タブ）数ベースの進捗：達成率 CC_TH% 以上＝完了（俯瞰・更新履歴で共通） ===== */
+var CC_TH=40;
+function ccBucket(p){return p>=CC_TH?'done':(p>0?'wip':'todo');}
+/* 最低限チェック（例外的に完了扱い）：科目|論点名 を localStorage 保存。各科目タブ／総合優先で共有 */
+var MIN_KEY='dashMinDoneV1';
+function loadMin(){try{return new Set(JSON.parse(localStorage.getItem(MIN_KEY))||[]);}catch(e){return new Set();}}
+var minSet=loadMin();
+function minKey(subj,name){return subj+'|'+name;}
+function isMin(subj,name){return minSet.has(minKey(subj,name));}
+function isDone(subj,name,p){return p>=CC_TH||isMin(subj,name);}
+function effPct(subj,t){return isMin(subj,t.name)?CC_TH:t.pct;}  /* 並び順用：最低限チェック済みは40%(CC_TH)扱い */
+function toggleMin(subj,name,on){if(on)minSet.add(minKey(subj,name));else minSet.delete(minKey(subj,name));try{localStorage.setItem(MIN_KEY,JSON.stringify(Array.from(minSet)));}catch(e){}renderOv();if(typeof renderPr==='function')renderPr();if(typeof renderGlobal==='function')renderGlobal();}
+function computeCC(){
+  var g={done:0,wip:0,todo:0,tot:0};
+  var list=cats.map(function(s){
+    var b={done:0,wip:0,todo:0,tot:0};
+    s.files.forEach(function(f){f.tabs.forEach(function(t){
+      var den=t.q+t.blk,mk=isMin(s.name,t.name);
+      if(den===0&&!mk)return;                          // 問題ゼロ かつ 未チェック＝論点として数えない（チェック済みは数える）
+      var p=den?Math.round((t.dq+t.df)/den*100):0;
+      b.tot++;
+      b[(mk||p>=CC_TH)?'done':(p>0?'wip':'todo')]++;
+    });});
+    g.done+=b.done;g.wip+=b.wip;g.todo+=b.todo;g.tot+=b.tot;
+    return {name:s.name,b:b};
+  });
+  return {g:g,list:list};
+}
+function renderOv(){
+  var qpct=pctOf(G.dq,G.q),fpct=pctOf(G.df,G.blk);
+  var _cc=computeCC(),gCC=_cc.g,ccList=_cc.list;
+  var ccPct=Math.round(gCC.done/(gCC.tot||1)*100);
+  var ccSeg1=(gCC.done/(gCC.tot||1)*100),ccSeg2=((gCC.done+gCC.wip)/(gCC.tot||1)*100);
+  var h='<div class="hero">'
+ +'<div class="gauge" style="--p:'+gpct+'"><div class="in"><div><div class="big">'+gpct+'%</div><div class="lb">全体達成率</div></div></div></div>'
+ +'<div class="gauge gauge-cc" title="論点 完了'+gCC.done+'・着手中'+gCC.wip+'・未着手'+gCC.todo+'（全'+gCC.tot+'）" style="background:conic-gradient(var(--fill) 0 '+ccSeg1+'%,#f59e0b '+ccSeg1+'% '+ccSeg2+'%,var(--track) '+ccSeg2+'% 100%)"><div class="in"><div><div class="big">'+ccPct+'%</div><div class="lb gcc">論点完了率</div></div></div></div>'
+ +'<div class="herostat">'
+ +'<div class="row"><span class="lg">クイズ</span><div class="bar"><i class="q" style="width:'+qpct+'%"></i></div><span class="v">'+G.dq+' / '+G.q+'</span></div>'
+ +'<div class="row"><span class="lg">穴埋め</span><div class="bar"><i class="f" style="width:'+fpct+'%"></i></div><span class="v">'+G.df+' / '+G.blk+'</span></div>'
+ +'<div class="row"><span class="lg">論点</span><span class="ccmini"><span class="cc-done">完了'+gCC.done+'</span>・<span class="cc-wip">着手'+gCC.wip+'</span>・<span class="cc-todo">未'+gCC.todo+'</span>　<span class="cctot">/ 全'+gCC.tot+'</span></span></div>'
+ +'</div>'
+ +'<div class="heronote">全 <b>'+(G.q+G.blk)+'</b> 問中 <b>'+(G.dq+G.df)+'</b> 問こなした。論点は全 <b>'+gCC.tot+'</b> 中 完了 <b>'+gCC.done+'</b>（'+CC_TH+'%↑）。円グラフ＝<span class="cc-done">緑:完了</span>・<span class="cc-wip">橙:着手中</span>・<span style="color:var(--muted)">灰:未着手</span>。詳細は下の「論点数進捗」。</div>'
+ +'</div>';
+h+='<div class="sec-h">科目別 論点数（カテゴリ）進捗　<span style="font-weight:400;color:var(--muted)">※各論点の達成率で判定：'+CC_TH+'%以上＝完了・1〜'+(CC_TH-1)+'%＝着手中・0%＝未着手</span></div>';
+h+='<div class="rankcard">';
+h+='<div class="ccsum">全 <b>'+gCC.tot+'</b> 論点中　<span class="cc-done">完了 '+gCC.done+'</span>・<span class="cc-wip">着手中 '+gCC.wip+'</span>・<span class="cc-todo">未着手 '+gCC.todo+'</span>'
+  +'（完了率 <b>'+Math.round(gCC.done/(gCC.tot||1)*100)+'%</b>）</div>';
+h+='<div class="cclgd"><span><i class="l-d"></i>完了('+CC_TH+'%↑)</span><span><i class="l-w"></i>着手中(1〜'+(CC_TH-1)+'%)</span><span><i class="l-t"></i>未着手(0%)</span></div>';
+ccList.slice().sort(function(a,b){return (b.b.done-a.b.done)||((b.b.done+b.b.wip)-(a.b.done+a.b.wip));}).forEach(function(s){
+  var b=s.b,tot=b.tot||1;
+  h+='<div class="ccrow"><span class="ccname">'+esc(s.name)+'</span>'
+    +'<div class="ccbar" title="完了'+b.done+'・着手中'+b.wip+'・未着手'+b.todo+'（全'+b.tot+'論点）">'
+    +(b.done?'<i class="cc-d" style="width:'+(b.done/tot*100)+'%"></i>':'')
+    +(b.wip?'<i class="cc-w" style="width:'+(b.wip/tot*100)+'%"></i>':'')
+    +'</div>'
+    +'<span class="ccnum"><b class="cc-done">'+b.done+'</b> / <span class="cc-wip">'+b.wip+'</span> / <span class="cc-todo">'+b.todo+'</span><span class="cctot">全'+b.tot+'</span></span></div>';
+});
+h+='</div>';
+h+='<div class="sec-h">科目別ランキング（問題数ベース）</div><div class="rankcard">';
+cats.forEach(function(s,i){
+  h+='<div class="rrow"><span class="rk">'+(i+1)+'</span><span class="rnm">'+esc(s.name)+'</span>'
+   +bar(s.dq,s.df,(s.q+s.blk)||1)+'<span class="frac">'+frac(s.dq,s.q,s.df,s.blk)+'</span>'
+   +'<span class="pct">'+s.pct+'%</span></div>';
+});
+h+='</div>';
+/* ===== ランク別・科目別×ランク別 達成率 ===== */
+var RKL=['S','A','B','C','D'];
+var gRk={},sRk={};RKL.forEach(function(r){gRk[r]={a:0,b:0};});
+cats.forEach(function(s){
+  sRk[s.name]={};RKL.forEach(function(r){sRk[s.name][r]={a:0,b:0};});
+  s.files.forEach(function(f){f.tabs.forEach(function(t){
+    if(!t.rank||RKL.indexOf(t.rank)<0)return;
+    var a=t.dq+t.df,b=t.q+t.blk;
+    gRk[t.rank].a+=a;gRk[t.rank].b+=b;sRk[s.name][t.rank].a+=a;sRk[s.name][t.rank].b+=b;
+  });});
+});
+h+='<div class="sec-h">ランク別 達成率（S=最頻出→D）</div><div class="rankcard"><div class="rankrow">';
+RKL.forEach(function(r){var g=gRk[r];if(!g.b)return;var p=pctOf(g.a,g.b);
+  h+='<div class="rkcell"><span class="rkbadge rk-'+r+'">'+r+'</span>'
+   +'<div class="bar" style="flex:1"><i class="q" style="width:'+p+'%"></i></div>'
+   +'<span class="pct">'+p+'%</span><span class="frac">'+g.a+'/'+g.b+'</span></div>';
+});
+h+='</div></div>';
+h+='<div class="sec-h">科目別 × ランク別 達成率（数字＝%・濃い＝進んでいる）</div><div class="rankcard" style="overflow-x:auto"><table class="rkmx"><thead><tr><th>科目＼ランク</th>';
+RKL.forEach(function(r){if(gRk[r].b)h+='<th><span class="rkbadge rk-'+r+'">'+r+'</span></th>';});
+h+='<th>科目計</th></tr></thead><tbody>';
+cats.forEach(function(s){
+  h+='<tr><td class="mxsubj">'+esc(s.name)+'</td>';
+  RKL.forEach(function(r){if(!gRk[r].b)return;var c=sRk[s.name][r],p=c.b?pctOf(c.a,c.b):null;
+    h+='<td'+(p===null?' class="na"':'')+(p!==null?' style="background:color-mix(in srgb,var(--fill) '+p+'%,var(--track))"':'')+'>'+(p===null?'–':p)+'</td>';
+  });
+  h+='<td class="mxtot">'+s.pct+'%</td></tr>';
+});
+h+='</tbody></table></div>';
+h+='<div class="sec-h">タブ別ヒートマップ（濃い＝進んでいる／各マスにカーソルで名称）</div><div class="heat">';
+cats.forEach(function(s){
+  h+='<div class="hrow"><span class="hlab">'+esc(s.name)+'</span><div class="cells">';
+  s.files.forEach(function(f){
+    f.tabs.forEach(function(t){
+      var p=pctOf(t.dq+t.df,t.q+t.blk);var dark=p>=55;
+      h+='<span class="cell'+(dark?' dark':'')+'" title="'+esc(f.file.replace(/_m\.html$/,''))+' ／ '+esc(t.name)+'：'+p+'%（ク'+t.dq+'/'+t.q+' 穴'+t.df+'/'+t.blk+'）" '
+       +'style="background:color-mix(in srgb,var(--fill) '+p+'%,var(--track))">'+(p>0?p:'')+'</span>';
+    });
+  });
+  h+='</div></div>';
+});
+h+='<div class="legendrow"><span>0%</span><span class="scale"></span><span>100%</span><span style="margin-left:8px">数字＝そのタブの達成率</span></div></div>';
+ov.innerHTML=h;
+}
+renderOv();
+
+var list=document.getElementById('list');
+cats.forEach(function(s,ci){
+  var el=document.createElement('div');el.className='cat';
+  var files=s.files.slice().sort(function(a,b){return b.pct-a.pct;});
+  var hh='<div class="cathead"><span class="rank">'+(ci+1)+'</span><span class="catname">'+esc(s.name)+'</span>'
+    +'<span class="frac">'+frac(s.dq,s.q,s.df,s.blk)+'</span><span class="pct">'+s.pct+'%</span></div>'
+    +'<div class="catbar">'+bar(s.dq,s.df,(s.q+s.blk)||1)+'</div><div class="filewrap">';
+  files.forEach(function(f){
+    hh+='<details class="file"><summary><span class="caret">▸</span>'
+      +'<span class="fname">'+esc(f.file.replace(/_m\.html$/,'').replace(/\.html$/,''))+'</span>'
+      +'<span class="tw"><span></span><span class="frac">'+frac(f.dq,f.q,f.df,f.blk)+'</span></span>'
+      +'<span class="pct">'+f.pct+'%</span></summary><div class="tabbox">';
+    f.tabs.forEach(function(t){
+      var zero=(t.q+t.blk)===0;
+      hh+='<details class="tab'+(zero?' z':'')+'"><summary><span class="caret">▸</span>'
+        +'<span class="tabname">'+esc(t.name)+'</span>'
+        +'<span class="tw">'+bar(t.dq,t.df,(t.q+t.blk)||1)+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span></span>'
+        +'<span class="pct">'+t.pct+'%</span></summary><div class="cards">';
+      t.cards.forEach(function(c){
+        var cd=(c.q+c.blk)||1,cp=Math.round((c.dq+c.df)/cd*100),z=(c.q+c.blk)===0;
+        hh+='<div class="card'+(z?' z':'')+'"><span class="cname">'+esc(c.title)+'</span>'
+          +bar(c.dq,c.df,cd)+'<span class="frac">'+frac(c.dq,c.q,c.df,c.blk)+'</span>'
+          +'<span class="pct">'+cp+'%</span></div>';
+      });
+      hh+='</div></details>';
+    });
+    hh+='</div></details>';
+  });
+  hh+='</div>';el.innerHTML=hh;list.appendChild(el);
+});
+document.getElementById('foot').textContent='全体 '+gpct+'%（'+(G.dq+G.df)+' / '+(G.q+G.blk)+'）';
+
+/* ===== 科目別タブ（各科目の項目ランキング） ===== */
+var prCats=cats.map(function(s){
+  var items=[];
+  s.files.forEach(function(f){
+    var fn=f.file.replace(/_m\.html$/,'').replace(/\.html$/,'');
+    f.tabs.forEach(function(t){
+      t.cards.forEach(function(c){
+        var den=c.q+c.blk;if(den===0)return;
+        items.push({title:c.title,ctx:fn+' ／ '+t.name,dq:c.dq,q:c.q,df:c.df,blk:c.blk,
+          den:den,pct:Math.round((c.dq+c.df)/den*100)});
+      });
+    });
+  });
+  return {name:s.name,pct:s.pct,items:items};
+});
+/* per-subject: topic(tab) list with rank/cospa if available */
+var subjTopics=cats.map(function(s,ci){
+  var topics=[],hasRank=false;
+  s.files.forEach(function(f){
+    var fn=f.file.replace(/_m\.html$/,'').replace(/\.html$/,'');
+    f.tabs.forEach(function(t){
+      if(t.rank)hasRank=true;
+      topics.push({name:t.name,src:fn,rank:t.rank||null,cospa:t.cospa||'',
+        dq:t.dq,q:t.q,df:t.df,blk:t.blk,den:(t.q+t.blk)||1,pct:t.pct});
+    });
+  });
+  return {name:s.name,pct:s.pct,hasRank:hasRank,topics:topics,items:(prCats[ci]&&prCats[ci].items)||[]};
+});
+var prMode='low';
+var RANKS=['S','A','B','C','D','E'];
+var COS={'◎':'cs-d','○':'cs-c','△':'cs-t','✕':'cs-x','×':'cs-x'};
+var COSORD={'◎':0,'○':1,'△':2,'✕':3,'×':3,'':9};
+var tabbar=document.getElementById('tabbar'),subjpanels=document.getElementById('subjpanels');
+subjTopics.forEach(function(s,i){
+  var btn=document.createElement('button');
+  btn.className='tabbtn';btn.id='t-s'+i;btn.setAttribute('role','tab');btn.textContent=s.name;
+  btn.addEventListener('click',function(){show('s'+i);});
+  tabbar.appendChild(btn);
+  var pan=document.createElement('section');pan.className='panel';pan.id='p-s'+i;
+  subjpanels.appendChild(pan);
+});
+/* 更新履歴タブ（一番右＝経済学の次） */
+(function(){
+  var b=document.createElement('button');b.className='tabbtn';b.id='t-log';b.setAttribute('role','tab');
+  b.textContent='更新履歴';b.addEventListener('click',function(){show('log');});
+  document.getElementById('tabbar').appendChild(b);
+  var p=document.createElement('section');p.className='panel';p.id='p-log';
+  document.getElementById('subjpanels').appendChild(p);
+})();
+function dayKey(ts){
+  var d=new Date(ts.slice(0,19)+'Z');d.setUTCHours(d.getUTCHours()-3);
+  return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2);
+}
+function renderLog(){
+  var pan=document.getElementById('p-log');
+  if(!LOG||!LOG.length){pan.innerHTML='<div class="rkhint" style="text-align:center;padding:30px">更新履歴はまだありません。「更新して」を実行すると差分が記録されます。</div>';return;}
+  var n=new Date();n.setHours(n.getHours()-3);
+  function k(x){return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2);}
+  var todayK=k(n),yestK=k(new Date(n.getTime()-86400000));
+  var days={};LOG.forEach(function(e){var kk=dayKey(e.ts);(days[kk]=days[kk]||[]).push(e);});
+  var dayKeysAsc=Object.keys(days).sort();        // 古い→新しい（本文の並び）
+  var dayKeysDesc=dayKeysAsc.slice().reverse();   // 新しい→古い（タブの並び）
+  var recent3=dayKeysDesc.slice(0,3);             // 最近3日＝デフォルト表示
+  function label(kk){return kk===todayK?'本日':(kk===yestK?'昨日':kk.slice(5).replace('-','/'));}
+  function dtxt(kk){return kk.slice(5).replace('-','/');}
+  function relBadge(kk){var r=kk===todayK?'本日':(kk===yestK?'昨日':'');return r?'<span class="rel">'+r+'</span>':'';}
+  function dayTotal(kk){return days[kk].reduce(function(s,e){return s+(e.na-e.oa);},0);}
+  // カテゴリ（論点）遷移：op%→np% から 完了(CC_TH%到達)・新規着手(0→1+) を数える
+  function catDelta(tabsList){
+    var m={};(tabsList||[]).forEach(function(t){
+      var k=t.subj+'|'+t.tab,o=+t.op||0,nn=+t.np||0;
+      if(!m[k])m[k]={op:o,np:nn};else{m[k].op=Math.min(m[k].op,o);m[k].np=Math.max(m[k].np,nn);}
+    });
+    var done=0,start=0;
+    Object.keys(m).forEach(function(k){var o=m[k].op,nn=m[k].np;if(o<CC_TH&&nn>=CC_TH)done++;if(o===0&&nn>0)start++;});
+    return {touched:Object.keys(m).length,done:done,start:start};
+  }
+  function dayCat(kk){var all=[];days[kk].forEach(function(e){(e.tabs||[]).forEach(function(t){all.push(t);});});return catDelta(all);}
+  function nTopicSpan(cd){return cd.touched?'<span class="ntopic">'+cd.touched+'論点</span>':'';}
+  function catTxt(cd){var a=[];if(cd.done)a.push('完了+'+cd.done);if(cd.start)a.push('着手+'+cd.start);return a.join('・');}
+  function catSpan(cd){var s=catTxt(cd);return s?'<span class="catsum">'+s+'</span>':'';}
+  function tabBadge(t){var o=+t.op||0,n=+t.np||0;if(o<CC_TH&&n>=CC_TH)return '<span class="cbadge cb-done">✅完了</span>';if(o===0&&n>0)return '<span class="cbadge cb-start">🆕着手</span>';return '';}
+  function entRows(e,compact){
+    var h='<div class="logent"><div class="logent-h"><span>'+esc(e.ts.slice(11,16))+'</span>'+nTopicSpan(catDelta(e.tabs))+'<span class="d">+'+(e.na-e.oa)+'問</span>'+catSpan(catDelta(e.tabs))
+      +(!compact&&e.subs&&e.subs.length?'<span>｜ '+e.subs.map(function(s){return esc(s.name)+' +'+s.d;}).join(' / ')+'</span>':'')+'</div>';
+    (e.tabs||[]).forEach(function(t){
+      var seg=[];if(t.ddq)seg.push('クイズ'+(t.ddq>0?'+':'')+t.ddq);if(t.ddf)seg.push('穴埋め'+(t.ddf>0?'+':'')+t.ddf);
+      var fn=t.file?esc((t.file+'').replace(/_m\.html$/,'').replace(/\.html$/,'')):'';
+      h+='<div class="logrow"><span class="s">'+esc(t.subj)+'</span><span class="n">'+esc(t.tab)+'</span>'
+        +(fn?'<span class="lf">'+fn+'</span>':'')+'<span class="dd">'+seg.join('・')+'</span><span class="pp">'+t.op+'%→'+t.np+'%</span>'+tabBadge(t)+'</div>';
+      if(!compact)(t.cards||[]).forEach(function(c){var cs=[];if(c.dq)cs.push('ｸ'+(c.dq>0?'+':'')+c.dq);if(c.df)cs.push('穴'+(c.df>0?'+':'')+c.df);h+='<div class="logcard">- '+esc(c.title)+'：'+cs.join(' ')+'</div>';});
+    });
+    return h+'</div>';
+  }
+  // 日付サブタブ
+  var hint='<div class="rkhint">日付タブで切替。<b>最近3日</b>は横並び（左が新しい日）。1日の区切り＝午前3時。</div>';
+  var tabs='<div class="logtabs" id="logtabs"><button class="logtab active" data-sel="recent3">最近3日</button>';
+  dayKeysDesc.forEach(function(kk){tabs+='<button class="logtab" data-sel="'+kk+'">'+esc(label(kk))+'</button>';});
+  tabs+='</div>';
+  // 最近3日＝3カラム横並び（左が新しい）
+  var cols='<div class="logview" data-view="recent3"><div class="logcols">';
+  recent3.forEach(function(kk){
+    cols+='<div class="logcol"><div class="logcol-h"><span class="dt">'+dtxt(kk)+'</span>'+relBadge(kk)+nTopicSpan(dayCat(kk))+'<span class="sum">+'+dayTotal(kk)+'問</span>'+catSpan(dayCat(kk))+'</div>';
+    days[kk].slice().sort(function(a,b){return a.ts<b.ts?-1:1;}).forEach(function(e){cols+=entRows(e,true);});
+    cols+='</div>';
+  });
+  cols+='</div></div>';
+  // 単日＝詳細（カードまで）
+  var singles='';
+  dayKeysAsc.forEach(function(kk){
+    singles+='<div class="logview" data-view="'+kk+'" style="display:none"><div class="logday"><div class="logday-h"><span class="dt">'+dtxt(kk)+'</span>'+relBadge(kk)+nTopicSpan(dayCat(kk))+'<span class="sum">+'+dayTotal(kk)+'問</span>'+catSpan(dayCat(kk))+'</div>';
+    days[kk].slice().sort(function(a,b){return a.ts<b.ts?-1:1;}).forEach(function(e){singles+=entRows(e,false);});
+    singles+='</div></div>';
+  });
+  pan.innerHTML=hint+tabs+cols+singles;
+  function apply(sel){
+    pan.querySelectorAll('.logview').forEach(function(v){v.style.display=(v.getAttribute('data-view')===sel)?'':'none';});
+    pan.querySelectorAll('.logtab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-sel')===sel);});
+  }
+  pan.querySelector('#logtabs').addEventListener('click',function(ev){var b=ev.target.closest?ev.target.closest('.logtab'):null;if(!b)return;apply(b.getAttribute('data-sel'));});
+  apply('recent3');
+}
+renderLog();
+/* タブ順: 総合優先 → 更新履歴 → 俯瞰 → 各科目 → 科目別詳細(最後) */
+(function(){
+  var bar=document.getElementById('tabbar');
+  var order=['t-pr','t-log','t-ov'];
+  Array.prototype.forEach.call(bar.querySelectorAll('.tabbtn'),function(b){if(/^t-s\d+$/.test(b.id))order.push(b.id);});
+  order.push('t-dt');
+  order.forEach(function(id){var el=document.getElementById(id);if(el)bar.appendChild(el);});
+})();
+function topicRow(t,subj){
+  var mk=isMin(subj,t.name),hot=!mk&&t.pct===0;
+  var pd=mk?CC_TH:t.pct;
+  var bh=mk?('<div class="bar"><i class="f" style="width:'+CC_TH+'%"></i></div>'):bar(t.dq,t.df,t.den);
+  var chk='<label class="minchk" title="最低限チェック＝完了扱い（例外）"><input type="checkbox" class="mincheck" data-subj="'+esc(subj)+'" data-tab="'+esc(t.name)+'"'+(mk?' checked':'')+'></label>';
+  var cb=t.cospa?('<span class="cospa '+(COS[t.cospa]||'cs-c')+'" title="コスパ '+t.cospa+'＝学習量に対する効果">'+t.cospa+'</span>'):'<span class="cospa" style="background:transparent"></span>';
+  return '<div class="topicrow'+(hot?' hot':'')+(mk?' mindone':'')+'">'+chk+cb
+    +'<span class="tmain"><span class="tnm">'+esc(t.name)+(mk?'<span class="minbadge">✔最低限</span>':'')+'</span><span class="tsrc">'+esc(t.src)+'</span></span>'
+    +bh+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span>'
+    +'<span class="pct'+(mk?' pct-min':'')+'">'+pd+'%</span></div>';
+}
+function renderRank(s,pan){
+  var h='<div class="rkhint">ランク順（<b>S=最頻出</b>→D/Eは低頻度）に「取り組む課題」を配置。'
+    +'<br>コスパ＝学習量に対する効果：<span class="cospa cs-d">◎</span>高い '
+    +'<span class="cospa cs-c">○</span>標準 <span class="cospa cs-t">△</span>やや重い '
+    +'<span class="cospa cs-x">✕</span>重い　→ 同ランクなら◎から先に。'
+    +'<br>左端の□にチェック＝<b>最低限でOK</b>（達成率に関わらず完了扱い・例外）。</div>';
+  RANKS.forEach(function(rk){
+    var ts=s.topics.filter(function(t){return t.rank===rk;});
+    if(!ts.length)return;
+    ts.sort(function(a,b){return (COSORD[a.cospa]-COSORD[b.cospa])||(effPct(s.name,a)-effPct(s.name,b));});
+    h+='<div class="rkgroup"><div class="rkband"><span class="rkbadge rk-'+rk+'">'+rk+'</span>'
+      +'<span class="rklabel">ランク '+rk+'（'+ts.length+'論点）</span></div>';
+    ts.forEach(function(t){h+=topicRow(t,s.name);});
+    h+='</div>';
+  });
+  var un=s.topics.filter(function(t){return !t.rank;});
+  if(un.length){
+    h+='<div class="rkgroup"><div class="rkband"><span class="rkbadge rk-E" style="background:#cbd5e1;color:#334155">–</span><span class="rklabel">ランク未設定（'+un.length+'）</span></div>';
+    un.sort(function(a,b){return effPct(s.name,a)-effPct(s.name,b);});
+    un.forEach(function(t){h+=topicRow(t,s.name);});
+    h+='</div>';
+  }
+  pan.innerHTML=h;
+}
+function renderItems(s,pan){
+  var items=s.items.slice().sort(function(a,b){
+    return prMode==='low' ? ((a.pct-b.pct)||(b.den-a.den)) : ((b.pct-a.pct)||(b.den-a.den));
+  });
+  var h='<div class="prbar"><span class="lbl">'+esc(s.name)+'（項目 '+items.length+'／達成率 '+s.pct+'%）　並び順:</span>'
+    +'<span class="seg"><button class="prlow '+(prMode==='low'?'on':'')+'">未着手を優先（低い順）</button>'
+    +'<button class="prhigh '+(prMode==='high'?'on':'')+'">達成率が高い順</button></span></div><div class="prcat"><div class="prlist">';
+  items.forEach(function(it,idx){
+    var hot=prMode==='low'&&it.pct===0;
+    h+='<div class="pritem'+(hot?' hot':'')+'"><span class="pnum">'+(idx+1)+'</span>'
+      +'<span class="pmain"><span class="ptitle">'+esc(it.title)+'</span><span class="pctx">'+esc(it.ctx)+'</span></span>'
+      +bar(it.dq,it.df,it.den)+'<span class="frac">'+frac(it.dq,it.q,it.df,it.blk)+'</span>'
+      +'<span class="pct">'+it.pct+'%</span></div>';
+  });
+  h+='</div></div>';pan.innerHTML=h;
+  pan.querySelector('.prlow').addEventListener('click',function(){prMode='low';renderPr();});
+  pan.querySelector('.prhigh').addEventListener('click',function(){prMode='high';renderPr();});
+}
+function renderPr(){
+  subjTopics.forEach(function(s,i){
+    var pan=document.getElementById('p-s'+i);
+    if(s.hasRank)renderRank(s,pan);else renderItems(s,pan);
+  });
+}
+renderPr();
+
+/* ===== 総合優先（全科目ミックス） ===== */
+var allTopics=[];
+subjTopics.forEach(function(s){s.topics.forEach(function(t){if(t.rank)allTopics.push({subj:s.name,t:t});});});
+var RKCOL={S:'#dc2626',A:'#ea580c',B:'#16a34a',C:'#2563eb',D:'#64748b',E:'#94a3b8'};
+var PREF_KEY='dashPrefV1';
+function loadPref(){try{return JSON.parse(localStorage.getItem(PREF_KEY))||{};}catch(e){return {};}}
+function savePref(){try{localStorage.setItem(PREF_KEY,JSON.stringify({mode:gMode,ranks:Array.from(gRanks)}));}catch(e){}}
+var _pf=loadPref();
+var gMode=_pf.mode==='pct'?'pct':'rank';
+var gRanks=new Set(Array.isArray(_pf.ranks)&&_pf.ranks.length?_pf.ranks:RANKS);
+function growRow(x,showBadge){
+  var t=x.t,mk=isMin(x.subj,t.name),hot=!mk&&t.pct===0;
+  var pd=mk?CC_TH:t.pct;
+  var bh=mk?('<div class="bar"><i class="f" style="width:'+CC_TH+'%"></i></div>'):bar(t.dq,t.df,t.den);
+  var chk='<label class="minchk" title="最低限チェック＝完了扱い（例外）"><input type="checkbox" class="mincheck" data-subj="'+esc(x.subj)+'" data-tab="'+esc(t.name)+'"'+(mk?' checked':'')+'></label>';
+  var cb=t.cospa?('<span class="cospa '+(COS[t.cospa]||'cs-c')+'">'+t.cospa+'</span>'):'<span class="cospa" style="background:transparent"></span>';
+  var rb=showBadge?('<span class="rkbadge rk-'+t.rank+'">'+t.rank+'</span>'):'<span></span>';
+  return '<div class="growrow'+(hot?' hot':'')+(mk?' mindone':'')+'">'+chk+cb+rb
+    +'<span class="tmain"><span class="tnm">'+esc(t.name)+(mk?'<span class="minbadge">✔最低限</span>':'')+'</span>'
+    +'<span class="tsrc"><span class="gsubj">'+esc(x.subj)+'</span>　'+esc(x.t.src)+'</span></span>'
+    +bh+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span>'
+    +'<span class="pct'+(mk?' pct-min':'')+'">'+pd+'%</span></div>';
+}
+function renderGlobal(){
+  var pan=document.getElementById('p-pr');
+  var allOn=RANKS.every(function(r){return gRanks.has(r);});
+  var h='<div class="rkhint">全科目を横断し、<b>重要度（ランクS→D）×まだ進んでいない</b>順に「今やる課題」を並べます。'
+    +'　表示:<span class="gseg"><button class="grk '+(gMode==='rank'?'on':'')+'">重要度順（ランク→未着手）</button>'
+    +'<button class="gpc '+(gMode==='pct'?'on':'')+'">達成率の低い順</button></span>'
+    +'<br>コスパ＝学習量に対する効果：<span class="cospa cs-d">◎</span>高い <span class="cospa cs-c">○</span>標準 '
+    +'<span class="cospa cs-t">△</span>やや重い <span class="cospa cs-x">✕</span>重い（同条件なら◎から先に）'
+    +'<br>左端の□にチェック＝<b>最低限でOK</b>（達成率に関わらず完了扱い・例外）。</div>';
+  // ランク別フィルタ（選択状態はlocalStorageに保存）
+  h+='<div class="rfil"><span class="lb">ランク絞り込み:</span>'
+    +'<button class="rfchip fall"'+(allOn?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>全</button>';
+  RANKS.forEach(function(rk){
+    var on=gRanks.has(rk);
+    h+='<button class="rfchip fr" data-r="'+rk+'"'+(on?' style="background:'+RKCOL[rk]+';color:#fff;border-color:transparent"':'')+'>'+rk+'</button>';
+  });
+  h+='</div>';
+  var shown=allTopics.filter(function(x){return gRanks.has(x.t.rank);});
+  if(gMode==='rank'){
+    RANKS.forEach(function(rk){
+      if(!gRanks.has(rk))return;
+      var ts=shown.filter(function(x){return x.t.rank===rk;});
+      if(!ts.length)return;
+      ts.sort(function(a,b){return (effPct(a.subj,a.t)-effPct(b.subj,b.t))||(COSORD[a.t.cospa]-COSORD[b.t.cospa]);});
+      h+='<div class="rkgroup"><div class="rkband"><span class="rkbadge rk-'+rk+'">'+rk+'</span>'
+        +'<span class="rklabel">ランク '+rk+'（'+ts.length+'）</span></div>';
+      ts.forEach(function(x){h+=growRow(x,false);});
+      h+='</div>';
+    });
+  }else{
+    var ts=shown.slice().sort(function(a,b){
+      return (effPct(a.subj,a.t)-effPct(b.subj,b.t))||(RANKS.indexOf(a.t.rank)-RANKS.indexOf(b.t.rank))||(COSORD[a.t.cospa]-COSORD[b.t.cospa]);
+    });
+    h+='<div class="rkgroup">';ts.forEach(function(x){h+=growRow(x,true);});h+='</div>';
+  }
+  if(!shown.length)h+='<div class="rkhint" style="text-align:center">選択中のランクに該当する論点がありません。</div>';
+  pan.innerHTML=h;
+  pan.querySelector('.grk').addEventListener('click',function(){gMode='rank';savePref();renderGlobal();});
+  pan.querySelector('.gpc').addEventListener('click',function(){gMode='pct';savePref();renderGlobal();});
+  pan.querySelector('.fall').addEventListener('click',function(){
+    if(RANKS.every(function(r){return gRanks.has(r);})){gRanks=new Set();}else{gRanks=new Set(RANKS);}
+    savePref();renderGlobal();
+  });
+  pan.querySelectorAll('.fr').forEach(function(b){
+    b.addEventListener('click',function(){
+      var r=b.getAttribute('data-r');
+      if(gRanks.has(r))gRanks.delete(r);else gRanks.add(r);
+      savePref();renderGlobal();
+    });
+  });
+}
+renderGlobal();
+/* 最低限チェックのトグル（各科目タブ／総合優先で共有・俯瞰の完了数に即反映） */
+document.addEventListener('change',function(ev){
+  var c=ev.target;if(!c||!c.classList||!c.classList.contains('mincheck'))return;
+  toggleMin(c.getAttribute('data-subj'),c.getAttribute('data-tab'),c.checked);
+});
+
+var tg=document.getElementById('tg');
+function show(which){
+  document.querySelectorAll('.tabbtn').forEach(function(b){b.classList.toggle('active',b.id==='t-'+which);});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('active',p.id==='p-'+which);});
+  tg.style.display=which==='dt'?'block':'none';window.scrollTo(0,0);
+}
+document.getElementById('t-pr').addEventListener('click',function(){show('pr');});
+document.getElementById('t-ov').addEventListener('click',function(){show('ov');});
+document.getElementById('t-dt').addEventListener('click',function(){show('dt');});
+var op=false;
+tg.addEventListener('click',function(){op=!op;this.textContent=op?'すべて閉じる':'すべて展開';
+  document.querySelectorAll('#p-dt details').forEach(function(d){d.open=op;});});
+</script>
