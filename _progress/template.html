@@ -193,6 +193,8 @@ details[open]>summary .caret{transform:rotate(90deg)}
 .gseg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:6px}
 .gseg button{appearance:none;border:0;background:var(--panel);color:var(--muted);font:inherit;font-size:.76rem;font-weight:700;padding:5px 12px;cursor:pointer}
 .gseg button.on{background:var(--accent);color:#fff}
+.subjsearch{display:block;width:100%;max-width:360px;padding:7px 11px;margin:10px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);font:inherit;font-size:.82rem}
+.subjsearch:focus{outline:none;border-color:var(--accent)}
 .rfil{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin:10px 0 2px}
 .rfil .lb{font-size:.72rem;color:var(--muted);margin-right:2px}
 .rfchip{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--muted);
@@ -655,13 +657,26 @@ renderLog();
   order.push('t-dt');
   order.forEach(function(id){var el=document.getElementById(id);if(el)bar.appendChild(el);});
 })();
+/* 科目別タブの検索（科目ごとに保持・CSS表示切替で入力を保つ） */
+var searchBySubj={};
+function applySearch(pan,q){
+  q=(q||'').trim().toLowerCase();
+  pan.querySelectorAll('.rkgroup').forEach(function(g){
+    var any=false;
+    g.querySelectorAll('.topicrow').forEach(function(r){
+      var hit=!q||(r.getAttribute('data-s')||'').indexOf(q)>=0;
+      r.style.display=hit?'':'none';if(hit)any=true;
+    });
+    g.style.display=any?'':'none';
+  });
+}
 function topicRow(t,subj){
   var mk=isMin(subj,t.name),hot=!mk&&t.pct===0;
   var pd=mk?CC_TH:t.pct;
   var bh=mk?('<div class="bar"><i class="f" style="width:'+CC_TH+'%"></i></div>'):bar(t.dq,t.df,t.den);
   var chk='<label class="minchk" title="最低限チェック＝完了扱い（例外）"><input type="checkbox" class="mincheck" data-subj="'+esc(subj)+'" data-tab="'+esc(t.name)+'"'+(mk?' checked':'')+'></label>';
   var cb=t.cospa?('<span class="cospa '+(COS[t.cospa]||'cs-c')+'" title="コスパ '+t.cospa+'＝学習量に対する効果">'+t.cospa+'</span>'):'<span class="cospa" style="background:transparent"></span>';
-  return '<div class="topicrow'+(hot?' hot':'')+(mk?' mindone':'')+'">'+chk+cb
+  return '<div class="topicrow'+(hot?' hot':'')+(mk?' mindone':'')+'" data-s="'+esc(((t.name||'')+' '+(t.src||'')).toLowerCase())+'">'+chk+cb
     +'<span class="tmain"><span class="tnm">'+esc(t.name)+(mk?'<span class="minbadge">✔最低限</span>':'')+'</span><span class="tsrc">'+esc(t.src)+'</span></span>'
     +bh+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span>'
     +'<span class="pct'+(mk?' pct-min':'')+'">'+pd+'%</span></div>';
@@ -672,6 +687,8 @@ function renderRank(s,pan){
     +'<span class="cospa cs-c">○</span>標準 <span class="cospa cs-t">△</span>やや重い '
     +'<span class="cospa cs-x">✕</span>重い　→ 同ランクなら◎から先に。'
     +'<br>左端の□にチェック＝<b>最低限でOK</b>（達成率に関わらず完了扱い・例外）。</div>';
+  // 検索ボックス（この科目内の論点名で絞り込み）
+  h+='<input class="subjsearch" type="search" placeholder="🔍 論点を検索（この科目内）" value="'+esc(searchBySubj[s.name]||'')+'">';
   // この科目に存在するランク＋未設定
   var present=RANKS.filter(function(rk){return s.topics.some(function(t){return t.rank===rk;});});
   var hasUn=s.topics.some(function(t){return !t.rank;});
@@ -714,6 +731,10 @@ function renderRank(s,pan){
   if(fall)fall.addEventListener('click',function(){
     var allOn=keys.every(function(k){return prRanks.has(k);});
     keys.forEach(function(k){if(allOn)prRanks.delete(k);else prRanks.add(k);});savePrRanks();renderPr();});
+  // 検索：入力で再描画せずCSS表示切替（フォーカス保持）
+  var si=pan.querySelector('.subjsearch');
+  if(si){si.addEventListener('input',function(){searchBySubj[s.name]=si.value;applySearch(pan,si.value);});}
+  applySearch(pan,searchBySubj[s.name]||'');
 }
 function renderItems(s,pan){
   // 各項目にランク付与（経済学は ECON_RANK）
