@@ -789,10 +789,15 @@ var allTopics=[];
 subjTopics.forEach(function(s){s.topics.forEach(function(t){if(t.rank)allTopics.push({subj:s.name,t:t});});});
 var PREF_KEY='dashPrefV1';
 function loadPref(){try{return JSON.parse(localStorage.getItem(PREF_KEY))||{};}catch(e){return {};}}
-function savePref(){try{localStorage.setItem(PREF_KEY,JSON.stringify({mode:gMode,ranks:Array.from(gRanks)}));}catch(e){}}
+function savePref(){try{localStorage.setItem(PREF_KEY,JSON.stringify({mode:gMode,ranks:Array.from(gRanks),subjs:Array.from(gSubjs)}));}catch(e){}}
 var _pf=loadPref();
 var gMode=_pf.mode==='pct'?'pct':'rank';
 var gRanks=new Set(Array.isArray(_pf.ranks)&&_pf.ranks.length?_pf.ranks:RANKS);
+/* 科目絞り込み（総合優先） */
+var ALL_SUBJS=subjTopics.map(function(s){return s.name;});
+var SUBJ_SHORT={'経営情報システム':'情報','財務・会計':'財務','運営管理':'運営','企業経営理論':'企業','経営法務':'法務','中小企業経営・政策':'中小','経済学・経済政策':'経済'};
+function subjShort(n){return SUBJ_SHORT[n]||n;}
+var gSubjs=new Set(Array.isArray(_pf.subjs)&&_pf.subjs.length?_pf.subjs:ALL_SUBJS);
 function growRow(x,showBadge){
   var t=x.t,mk=isMin(x.subj,t.name),hot=!mk&&t.pct===0;
   var pd=mk?CC_TH:t.pct;
@@ -823,7 +828,14 @@ function renderGlobal(){
     h+='<button class="rfchip fr" data-r="'+rk+'"'+(on?' style="background:'+RKCOL[rk]+';color:#fff;border-color:transparent"':'')+'>'+rk+'</button>';
   });
   h+='</div>';
-  var shown=allTopics.filter(function(x){return gRanks.has(x.t.rank);});
+  // 科目別フィルタ
+  var subjAllOn=ALL_SUBJS.every(function(n){return gSubjs.has(n);});
+  h+='<div class="rfil"><span class="lb">科目絞り込み:</span>'
+    +'<button class="rfchip sfall"'+(subjAllOn?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>全</button>';
+  ALL_SUBJS.forEach(function(n){var on=gSubjs.has(n);
+    h+='<button class="rfchip sf" data-subj="'+esc(n)+'"'+(on?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>'+esc(subjShort(n))+'</button>';});
+  h+='</div>';
+  var shown=allTopics.filter(function(x){return gRanks.has(x.t.rank)&&gSubjs.has(x.subj);});
   if(gMode==='rank'){
     RANKS.forEach(function(rk){
       if(!gRanks.has(rk))return;
@@ -853,6 +865,17 @@ function renderGlobal(){
     b.addEventListener('click',function(){
       var r=b.getAttribute('data-r');
       if(gRanks.has(r))gRanks.delete(r);else gRanks.add(r);
+      savePref();renderGlobal();
+    });
+  });
+  pan.querySelector('.sfall').addEventListener('click',function(){
+    if(ALL_SUBJS.every(function(n){return gSubjs.has(n);})){gSubjs=new Set();}else{gSubjs=new Set(ALL_SUBJS);}
+    savePref();renderGlobal();
+  });
+  pan.querySelectorAll('.sf').forEach(function(b){
+    b.addEventListener('click',function(){
+      var n=b.getAttribute('data-subj');
+      if(gSubjs.has(n))gSubjs.delete(n);else gSubjs.add(n);
       savePref();renderGlobal();
     });
   });
