@@ -178,6 +178,10 @@ details[open]>summary .caret{transform:rotate(90deg)}
 .topicrow.mindone,.growrow.mindone{background:color-mix(in srgb,var(--fill) 11%,var(--panel));border-color:color-mix(in srgb,var(--fill) 45%,var(--line))}
 .minbadge{display:inline-block;font-size:.6rem;font-weight:800;color:#fff;background:var(--fill);border-radius:7px;padding:0 6px;margin-left:6px;vertical-align:1px}
 .pct-min{color:var(--fill)}
+/* 自然に40%(CC_TH)超え＝青系（強制の緑と区別） */
+.topicrow.natdone,.growrow.natdone{background:color-mix(in srgb,var(--quiz) 8%,var(--panel));border-color:color-mix(in srgb,var(--quiz) 42%,var(--line))}
+.natbadge{display:inline-block;font-size:.6rem;font-weight:800;color:#fff;background:var(--quiz);border-radius:7px;padding:0 6px;margin-left:6px;vertical-align:1px}
+.pct-nat{color:var(--quiz)}
 .cospa{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.95rem;font-weight:700;justify-self:center}
 .cs-d{background:#dcfce7;color:#15803d}.cs-c{background:#ccfbf1;color:#0f766e}
 .cs-t{background:#fef3c7;color:#b45309}.cs-x{background:#fee2e2;color:#b91c1c}
@@ -671,15 +675,16 @@ function applySearch(pan,q){
   });
 }
 function topicRow(t,subj){
-  var mk=isMin(subj,t.name),hot=!mk&&t.pct===0;
+  var mk=isMin(subj,t.name),nat=!mk&&t.pct>=CC_TH,hot=!mk&&t.pct===0;
   var pd=mk?CC_TH:t.pct;
   var bh=mk?('<div class="bar"><i class="f" style="width:'+CC_TH+'%"></i></div>'):bar(t.dq,t.df,t.den);
   var chk='<label class="minchk" title="最低限チェック＝完了扱い（例外）"><input type="checkbox" class="mincheck" data-subj="'+esc(subj)+'" data-tab="'+esc(t.name)+'"'+(mk?' checked':'')+'></label>';
   var cb=t.cospa?('<span class="cospa '+(COS[t.cospa]||'cs-c')+'" title="コスパ '+t.cospa+'＝学習量に対する効果">'+t.cospa+'</span>'):'<span class="cospa" style="background:transparent"></span>';
-  return '<div class="topicrow'+(hot?' hot':'')+(mk?' mindone':'')+'" data-s="'+esc(((t.name||'')+' '+(t.src||'')).toLowerCase())+'">'+chk+cb
-    +'<span class="tmain"><span class="tnm">'+esc(t.name)+(mk?'<span class="minbadge">✔最低限</span>':'')+'</span><span class="tsrc">'+esc(t.src)+'</span></span>'
+  var badge=mk?'<span class="minbadge">✔最低限</span>':(nat?'<span class="natbadge">✓'+CC_TH+'%↑</span>':'');
+  return '<div class="topicrow'+(hot?' hot':'')+(mk?' mindone':(nat?' natdone':''))+'" data-s="'+esc(((t.name||'')+' '+(t.src||'')).toLowerCase())+'">'+chk+cb
+    +'<span class="tmain"><span class="tnm">'+esc(t.name)+badge+'</span><span class="tsrc">'+esc(t.src)+'</span></span>'
     +bh+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span>'
-    +'<span class="pct'+(mk?' pct-min':'')+'">'+pd+'%</span></div>';
+    +'<span class="pct'+(mk?' pct-min':(nat?' pct-nat':''))+'">'+pd+'%</span></div>';
 }
 function renderRank(s,pan){
   var h='<div class="rkhint">ランク順（<b>S=最頻出</b>→D/Eは低頻度）に「取り組む課題」を配置。'
@@ -799,17 +804,18 @@ var SUBJ_SHORT={'経営情報システム':'情報','財務・会計':'財務','
 function subjShort(n){return SUBJ_SHORT[n]||n;}
 var gSubjs=new Set(Array.isArray(_pf.subjs)&&_pf.subjs.length?_pf.subjs:ALL_SUBJS);
 function growRow(x,showBadge){
-  var t=x.t,mk=isMin(x.subj,t.name),hot=!mk&&t.pct===0;
+  var t=x.t,mk=isMin(x.subj,t.name),nat=!mk&&t.pct>=CC_TH,hot=!mk&&t.pct===0;
   var pd=mk?CC_TH:t.pct;
   var bh=mk?('<div class="bar"><i class="f" style="width:'+CC_TH+'%"></i></div>'):bar(t.dq,t.df,t.den);
   var chk='<label class="minchk" title="最低限チェック＝完了扱い（例外）"><input type="checkbox" class="mincheck" data-subj="'+esc(x.subj)+'" data-tab="'+esc(t.name)+'"'+(mk?' checked':'')+'></label>';
   var cb=t.cospa?('<span class="cospa '+(COS[t.cospa]||'cs-c')+'">'+t.cospa+'</span>'):'<span class="cospa" style="background:transparent"></span>';
   var rb=showBadge?('<span class="rkbadge rk-'+t.rank+'">'+t.rank+'</span>'):'<span></span>';
-  return '<div class="growrow'+(hot?' hot':'')+(mk?' mindone':'')+'">'+chk+cb+rb
-    +'<span class="tmain"><span class="tnm">'+esc(t.name)+(mk?'<span class="minbadge">✔最低限</span>':'')+'</span>'
+  var badge=mk?'<span class="minbadge">✔最低限</span>':(nat?'<span class="natbadge">✓'+CC_TH+'%↑</span>':'');
+  return '<div class="growrow'+(hot?' hot':'')+(mk?' mindone':(nat?' natdone':''))+'">'+chk+cb+rb
+    +'<span class="tmain"><span class="tnm">'+esc(t.name)+badge+'</span>'
     +'<span class="tsrc"><span class="gsubj">'+esc(x.subj)+'</span>　'+esc(x.t.src)+'</span></span>'
     +bh+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span>'
-    +'<span class="pct'+(mk?' pct-min':'')+'">'+pd+'%</span></div>';
+    +'<span class="pct'+(mk?' pct-min':(nat?' pct-nat':''))+'">'+pd+'%</span></div>';
 }
 function renderGlobal(){
   var pan=document.getElementById('p-pr');
