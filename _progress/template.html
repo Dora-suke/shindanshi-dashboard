@@ -184,6 +184,11 @@ details[open]>summary .caret{transform:rotate(90deg)}
 .topicrow.natdone,.growrow.natdone{background:color-mix(in srgb,var(--quiz) 8%,var(--panel));border-color:color-mix(in srgb,var(--quiz) 42%,var(--line))}
 .natbadge{display:inline-block;font-size:.6rem;font-weight:800;color:#fff;background:var(--quiz);border-radius:7px;padding:0 6px;margin-left:6px;vertical-align:1px}
 .pct-nat{color:var(--quiz)}
+.pct-b40{color:#d97706}.pct-b50{color:#16a34a}.pct-b60{color:#047857}
+.natbadge.nb40{background:#d97706}.natbadge.nb50{background:#16a34a}.natbadge.nb60{background:#047857}
+@media(prefers-color-scheme:dark){.pct-b40{color:#fbbf24}.pct-b50{color:#4ade80}.pct-b60{color:#34d399}}
+:root[data-theme="dark"] .pct-b40{color:#fbbf24}:root[data-theme="dark"] .pct-b50{color:#4ade80}:root[data-theme="dark"] .pct-b60{color:#34d399}
+:root[data-theme="light"] .pct-b40{color:#d97706}:root[data-theme="light"] .pct-b50{color:#16a34a}:root[data-theme="light"] .pct-b60{color:#047857}
 .cospa{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.95rem;font-weight:700;justify-self:center}
 .cs-d{background:#dcfce7;color:#15803d}.cs-c{background:#ccfbf1;color:#0f766e}
 .cs-t{background:#fef3c7;color:#b45309}.cs-x{background:#fee2e2;color:#b91c1c}
@@ -293,6 +298,8 @@ function heatBg(p){
   if(p>0)  return'color-mix(in srgb,var(--fill) '+Math.max(p,8)+'%,var(--track))';
   return'var(--track)';
 }
+// 達成率の帯（0/40/50/60）を返す
+function band(p){return p>=60?60:p>=50?50:p>=40?40:0;}
 
 var cats=[];var G={dq:0,q:0,df:0,blk:0},tabTot=0,tabZero=0;
 for(var cat in DATA){
@@ -694,11 +701,11 @@ function topicRow(t,subj){
   var bh=mk?('<div class="bar"><i class="f" style="width:'+CC_TH+'%"></i></div>'):bar(t.dq,t.df,t.den);
   var chk='<label class="minchk" title="最低限チェック＝完了扱い（例外）"><input type="checkbox" class="mincheck" data-subj="'+esc(subj)+'" data-tab="'+esc(t.name)+'"'+(mk?' checked':'')+'></label>';
   var cb=t.cospa?('<span class="cospa '+(COS[t.cospa]||'cs-c')+'" title="コスパ '+t.cospa+'＝学習量に対する効果">'+t.cospa+'</span>'):'<span class="cospa" style="background:transparent"></span>';
-  var badge=mk?'<span class="minbadge">✔最低限</span>':(nat?'<span class="natbadge">✓'+CC_TH+'%↑</span>':'');
+  var bd=band(t.pct);var badge=mk?'<span class="minbadge">✔最低限</span>':(nat?'<span class="natbadge nb'+bd+'">✓'+bd+'%↑</span>':'');
   return '<div class="topicrow'+(hot?' hot':'')+(mk?' mindone':(nat?' natdone':''))+'" data-s="'+esc(((t.name||'')+' '+(t.src||'')).toLowerCase())+'">'+chk+cb
     +'<span class="tmain"><span class="tnm">'+esc(t.name)+badge+'</span><span class="tsrc">'+esc(t.src)+'</span></span>'
     +bh+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span>'
-    +'<span class="pct'+(mk?' pct-min':(nat?' pct-nat':''))+'">'+pd+'%</span></div>';
+    +'<span class="pct'+(mk?' pct-min':(nat?' pct-b'+bd:''))+'">'+pd+'%</span></div>';
 }
 function renderRank(s,pan){
   var h='<div class="rkhint">ランク順（<b>S=最頻出</b>→D/Eは低頻度）に「取り組む課題」を配置。'
@@ -824,12 +831,12 @@ function growRow(x,showBadge){
   var chk='<label class="minchk" title="最低限チェック＝完了扱い（例外）"><input type="checkbox" class="mincheck" data-subj="'+esc(x.subj)+'" data-tab="'+esc(t.name)+'"'+(mk?' checked':'')+'></label>';
   var cb=t.cospa?('<span class="cospa '+(COS[t.cospa]||'cs-c')+'">'+t.cospa+'</span>'):'<span class="cospa" style="background:transparent"></span>';
   var rb=showBadge?('<span class="rkbadge rk-'+t.rank+'">'+t.rank+'</span>'):'<span></span>';
-  var badge=mk?'<span class="minbadge">✔最低限</span>':(nat?'<span class="natbadge">✓'+CC_TH+'%↑</span>':'');
+  var bd=band(t.pct);var badge=mk?'<span class="minbadge">✔最低限</span>':(nat?'<span class="natbadge nb'+bd+'">✓'+bd+'%↑</span>':'');
   return '<div class="growrow'+(hot?' hot':'')+(mk?' mindone':(nat?' natdone':''))+'">'+chk+cb+rb
     +'<span class="tmain"><span class="tnm">'+esc(t.name)+badge+'</span>'
     +'<span class="tsrc"><span class="gsubj">'+esc(x.subj)+'</span>　'+esc(x.t.src)+'</span></span>'
     +bh+'<span class="frac">'+frac(t.dq,t.q,t.df,t.blk)+'</span>'
-    +'<span class="pct'+(mk?' pct-min':(nat?' pct-nat':''))+'">'+pd+'%</span></div>';
+    +'<span class="pct'+(mk?' pct-min':(nat?' pct-b'+bd:''))+'">'+pd+'%</span></div>';
 }
 function renderGlobal(){
   var pan=document.getElementById('p-pr');
