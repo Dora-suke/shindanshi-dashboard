@@ -1,12 +1,12 @@
 <style>
 :root{--bg:#f4f5f7;--panel:#ffffff;--ink:#1c2430;--muted:#5b6675;--line:#e2e6ec;
-  --accent:#4f46e5;--quiz:#2563eb;--fill:#059669;--track:#dfe4ea;}
+  --accent:#4f46e5;--quiz:#2563eb;--fill:#059669;--track:#dfe4ea;--h40:#facc15;--h50:#22c55e;--h60:#047857;}
 @media (prefers-color-scheme:dark){:root{--bg:#12161d;--panel:#1a212b;--ink:#e6ebf2;--muted:#95a1b2;
-  --line:#29323f;--accent:#8b86f5;--quiz:#6ea8ff;--fill:#4cd6a0;--track:#2b3542;}}
+  --line:#29323f;--accent:#8b86f5;--quiz:#6ea8ff;--fill:#4cd6a0;--track:#2b3542;--h40:#eab308;--h50:#34d399;--h60:#059669;}}
 :root[data-theme="dark"]{--bg:#12161d;--panel:#1a212b;--ink:#e6ebf2;--muted:#95a1b2;--line:#29323f;
-  --accent:#8b86f5;--quiz:#6ea8ff;--fill:#4cd6a0;--track:#2b3542;}
+  --accent:#8b86f5;--quiz:#6ea8ff;--fill:#4cd6a0;--track:#2b3542;--h40:#eab308;--h50:#34d399;--h60:#059669;}
 :root[data-theme="light"]{--bg:#f4f5f7;--panel:#ffffff;--ink:#1c2430;--muted:#5b6675;--line:#e2e6ec;
-  --accent:#4f46e5;--quiz:#2563eb;--fill:#059669;--track:#dfe4ea;}
+  --accent:#4f46e5;--quiz:#2563eb;--fill:#059669;--track:#dfe4ea;--h40:#facc15;--h50:#22c55e;--h60:#047857;}
 *{box-sizing:border-box}
 body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,system-ui,sans-serif;
   background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.55;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
@@ -111,6 +111,8 @@ h1{font-size:1.18rem;margin:0}.sub{color:var(--muted);font-size:.76rem;margin:2p
 .cell{width:25px;height:25px;border-radius:5px;display:grid;place-items:center;font-size:.58rem;font-weight:700;
   color:#0d1b12;border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);cursor:default}
 .cell.dark{color:#eafff4}
+.hb{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}
+.rkmx td.hdark{color:#eafff4}
 .legendrow{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--muted);margin-top:10px}
 .scale{width:120px;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--track),var(--fill))}
 .cat{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
@@ -283,6 +285,14 @@ function esc(s){return (s+'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<
 function bar(dq,df,den,h){return '<div class="bar"'+(h?' style="height:'+h+'"':'')+'><i class="q" style="width:'+(den?dq/den*100:0)+'%"></i><i class="f" style="width:'+(den?df/den*100:0)+'%"></i></div>';}
 function frac(dq,q,df,b){return 'ク<b>'+dq+'</b>/'+q+' 穴<b>'+df+'</b>/'+b;}
 function pctOf(a,b){return b?Math.round(a/b*100):0;}
+// 達成率を 60/50/40% 以上で離散的に色分け（未満は薄いグラデ）
+function heatBg(p){
+  if(p>=60)return'var(--h60)';
+  if(p>=50)return'var(--h50)';
+  if(p>=40)return'var(--h40)';
+  if(p>0)  return'color-mix(in srgb,var(--fill) '+Math.max(p,8)+'%,var(--track))';
+  return'var(--track)';
+}
 
 var cats=[];var G={dq:0,q:0,df:0,blk:0},tabTot=0,tabZero=0;
 for(var cat in DATA){
@@ -410,7 +420,7 @@ h+='<th>科目計</th></tr></thead><tbody>';
 cats.forEach(function(s){
   h+='<tr><td class="mxsubj">'+esc(s.name)+'</td>';
   RKL.forEach(function(r){if(!gRk[r].b)return;var c=sRk[s.name][r],p=c.b?pctOf(c.a,c.b):null;
-    h+='<td'+(p===null?' class="na"':'')+(p!==null?' style="background:color-mix(in srgb,var(--fill) '+p+'%,var(--track))"':'')+'>'+(p===null?'–':p)+'</td>';
+    h+='<td'+(p===null?' class="na"':(p>=60?' class="hdark"':''))+(p!==null?' style="background:'+heatBg(p)+'"':'')+'>'+(p===null?'–':p)+'</td>';
   });
   h+='<td class="mxtot">'+s.pct+'%</td></tr>';
 });
@@ -420,14 +430,18 @@ cats.forEach(function(s){
   h+='<div class="hrow"><span class="hlab">'+esc(s.name)+'</span><div class="cells">';
   s.files.forEach(function(f){
     f.tabs.forEach(function(t){
-      var p=pctOf(t.dq+t.df,t.q+t.blk);var dark=p>=55;
+      var p=pctOf(t.dq+t.df,t.q+t.blk);var dark=p>=60;
       h+='<span class="cell'+(dark?' dark':'')+'" title="'+esc(f.file.replace(/_m\.html$/,''))+' ／ '+esc(t.name)+'：'+p+'%（ク'+t.dq+'/'+t.q+' 穴'+t.df+'/'+t.blk+'）" '
-       +'style="background:color-mix(in srgb,var(--fill) '+p+'%,var(--track))">'+(p>0?p:'')+'</span>';
+       +'style="background:'+heatBg(p)+'">'+(p>0?p:'')+'</span>';
     });
   });
   h+='</div></div>';
 });
-h+='<div class="legendrow"><span>0%</span><span class="scale"></span><span>100%</span><span style="margin-left:8px">数字＝そのタブの達成率</span></div></div>';
+h+='<div class="legendrow"><span>数字＝達成率</span>'
+ +'<span class="hb" style="background:color-mix(in srgb,var(--fill) 20%,var(--track))"></span><span>〜39%</span>'
+ +'<span class="hb" style="background:var(--h40)"></span><span>40%〜</span>'
+ +'<span class="hb" style="background:var(--h50)"></span><span>50%〜</span>'
+ +'<span class="hb" style="background:var(--h60)"></span><span>60%〜</span></div></div>';
 ov.innerHTML=h;
 }
 renderOv();
