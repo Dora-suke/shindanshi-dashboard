@@ -30,7 +30,15 @@ def analyze(p):
     tabs=[cleanS(t) for t in re.findall(r'class="tab-btn[^"]*"[^>]*>(.*?)</',html)]
     body=re.sub(r'__qzseed_data.*?</script>','',html,flags=re.S)
     ev=[]
-    for mm in re.finditer(r'id="tab(\d+)"',body):ev.append((mm.start(),'TAB',int(mm.group(1)),''))
+    tabmarks=[(mm.start(),int(mm.group(1))) for mm in re.finditer(r'id="tab(\d+)"',body)]
+    if not tabmarks:
+        # 経済の直前ノート等：パネルidが id="tabN" でなく id="qNN_tabM" 形式。
+        # sw(n) は .tab-content の DOM 出現順(i番目)で切替＝並び順をタブ番号として使う（タブ名 tabs[i] に対応）。
+        conts=list(re.finditer(r'class="tab-content[^"]*"',body))
+        # 誤割当防止：tab-content の数がタブボタン数と一致するときだけ順番割当を採用
+        if conts and len(conts)==len(tabs):
+            tabmarks=[(mm.start(),i) for i,mm in enumerate(conts)]
+    for pos,ti in tabmarks:ev.append((pos,'TAB',ti,''))
     for mm in re.finditer(r'<div[^>]*class="[^"]*fill-card[^"]*"[^>]*>',body):
         tag=mm.group(0);idm=re.search(r'id="([^"]+)"',tag)
         cid=idm.group(1) if idm else 'card@'+str(mm.start())
