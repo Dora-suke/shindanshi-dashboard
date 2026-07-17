@@ -367,43 +367,6 @@ function computeCC(){
   });
   return {g:g,list:list};
 }
-function renderOv(){
-  var qpct=pctOf(G.dq,G.q),fpct=pctOf(G.df,G.blk);
-  var _cc=computeCC(),gCC=_cc.g,ccList=_cc.list;
-  var ccPct=Math.round(gCC.done/(gCC.tot||1)*100);
-  var ccSeg1=(gCC.done/(gCC.tot||1)*100),ccSeg2=((gCC.done+gCC.wip)/(gCC.tot||1)*100);
-  var h='<div class="hero">'
- +'<div class="gauge" style="--p:'+gpct+'"><div class="in"><div><div class="big">'+gpct+'%</div><div class="lb">全体達成率</div></div></div></div>'
- +'<div class="gauge gauge-cc" title="論点 完了'+gCC.done+'・着手中'+gCC.wip+'・未着手'+gCC.todo+'（全'+gCC.tot+'）" style="background:conic-gradient(var(--fill) 0 '+ccSeg1+'%,#f59e0b '+ccSeg1+'% '+ccSeg2+'%,var(--track) '+ccSeg2+'% 100%)"><div class="in"><div><div class="big">'+ccPct+'%</div><div class="lb gcc">論点完了率</div></div></div></div>'
- +'<div class="herostat">'
- +'<div class="row"><span class="lg">クイズ</span><div class="bar"><i class="q" style="width:'+qpct+'%"></i></div><span class="v">'+G.dq+' / '+G.q+'</span></div>'
- +'<div class="row"><span class="lg">穴埋め</span><div class="bar"><i class="f" style="width:'+fpct+'%"></i></div><span class="v">'+G.df+' / '+G.blk+'</span></div>'
- +'<div class="row"><span class="lg">論点</span><span class="ccmini"><span class="cc-done">完了'+gCC.done+'</span>・<span class="cc-wip">着手'+gCC.wip+'</span>・<span class="cc-todo">未'+gCC.todo+'</span>　<span class="cctot">/ 全'+gCC.tot+'</span></span></div>'
- +'</div>'
- +'<div class="heronote">全 <b>'+(G.q+G.blk)+'</b> 問中 <b>'+(G.dq+G.df)+'</b> 問こなした。論点は全 <b>'+gCC.tot+'</b> 中 完了 <b>'+gCC.done+'</b>（'+CC_TH+'%↑）。円グラフ＝<span class="cc-done">緑:完了</span>・<span class="cc-wip">橙:着手中</span>・<span style="color:var(--muted)">灰:未着手</span>。詳細は下の「論点数進捗」。</div>'
- +'</div>';
-h+='<div class="sec-h">科目別 論点数（カテゴリ）進捗　<span style="font-weight:400;color:var(--muted)">※各論点の達成率で判定：'+CC_TH+'%以上＝完了・1〜'+(CC_TH-1)+'%＝着手中・0%＝未着手</span></div>';
-h+='<div class="rankcard">';
-h+='<div class="ccsum">全 <b>'+gCC.tot+'</b> 論点中　<span class="cc-done">完了 '+gCC.done+'</span>・<span class="cc-wip">着手中 '+gCC.wip+'</span>・<span class="cc-todo">未着手 '+gCC.todo+'</span>'
-  +'（完了率 <b>'+Math.round(gCC.done/(gCC.tot||1)*100)+'%</b>）</div>';
-h+='<div class="cclgd"><span><i class="l-d"></i>完了('+CC_TH+'%↑)</span><span><i class="l-w"></i>着手中(1〜'+(CC_TH-1)+'%)</span><span><i class="l-t"></i>未着手(0%)</span></div>';
-ccList.slice().sort(function(a,b){return (b.b.done-a.b.done)||((b.b.done+b.b.wip)-(a.b.done+a.b.wip));}).forEach(function(s){
-  var b=s.b,tot=b.tot||1;
-  h+='<div class="ccrow"><span class="ccname">'+esc(s.name)+'</span>'
-    +'<div class="ccbar" title="完了'+b.done+'・着手中'+b.wip+'・未着手'+b.todo+'（全'+b.tot+'論点）">'
-    +(b.done?'<i class="cc-d" style="width:'+(b.done/tot*100)+'%"></i>':'')
-    +(b.wip?'<i class="cc-w" style="width:'+(b.wip/tot*100)+'%"></i>':'')
-    +'</div>'
-    +'<span class="ccnum"><b class="cc-done">'+b.done+'</b> / <span class="cc-wip">'+b.wip+'</span> / <span class="cc-todo">'+b.todo+'</span><span class="cctot">全'+b.tot+'</span></span></div>';
-});
-h+='</div>';
-h+='<div class="sec-h">科目別ランキング（問題数ベース）</div><div class="rankcard">';
-cats.forEach(function(s,i){
-  h+='<div class="rrow"><span class="rk">'+(i+1)+'</span><span class="rnm">'+esc(s.name)+'</span>'
-   +bar(s.dq,s.df,(s.q+s.blk)||1)+'<span class="frac">'+frac(s.dq,s.q,s.df,s.blk)+'</span>'
-   +'<span class="pct">'+s.pct+'%</span></div>';
-});
-h+='</div>';
 /* 経済学カード→頻出ランク（暫定・ロードマップ準拠。ズレは下の値を直すだけでOK） */
 var ECON_RANK={
  '所得と需要量の関係（上級財・中級財・下級財）':'A',
@@ -452,6 +415,44 @@ var ECON_RANK={
  '自然失業率仮説と長期フィリップス曲線':'C',
  'スタグフレーションとフィリップス曲線のシフト':'C'
 };
+
+function renderOv(){
+  var qpct=pctOf(G.dq,G.q),fpct=pctOf(G.df,G.blk);
+  var _cc=computeCC(),gCC=_cc.g,ccList=_cc.list;
+  var ccPct=Math.round(gCC.done/(gCC.tot||1)*100);
+  var ccSeg1=(gCC.done/(gCC.tot||1)*100),ccSeg2=((gCC.done+gCC.wip)/(gCC.tot||1)*100);
+  var h='<div class="hero">'
+ +'<div class="gauge" style="--p:'+gpct+'"><div class="in"><div><div class="big">'+gpct+'%</div><div class="lb">全体達成率</div></div></div></div>'
+ +'<div class="gauge gauge-cc" title="論点 完了'+gCC.done+'・着手中'+gCC.wip+'・未着手'+gCC.todo+'（全'+gCC.tot+'）" style="background:conic-gradient(var(--fill) 0 '+ccSeg1+'%,#f59e0b '+ccSeg1+'% '+ccSeg2+'%,var(--track) '+ccSeg2+'% 100%)"><div class="in"><div><div class="big">'+ccPct+'%</div><div class="lb gcc">論点完了率</div></div></div></div>'
+ +'<div class="herostat">'
+ +'<div class="row"><span class="lg">クイズ</span><div class="bar"><i class="q" style="width:'+qpct+'%"></i></div><span class="v">'+G.dq+' / '+G.q+'</span></div>'
+ +'<div class="row"><span class="lg">穴埋め</span><div class="bar"><i class="f" style="width:'+fpct+'%"></i></div><span class="v">'+G.df+' / '+G.blk+'</span></div>'
+ +'<div class="row"><span class="lg">論点</span><span class="ccmini"><span class="cc-done">完了'+gCC.done+'</span>・<span class="cc-wip">着手'+gCC.wip+'</span>・<span class="cc-todo">未'+gCC.todo+'</span>　<span class="cctot">/ 全'+gCC.tot+'</span></span></div>'
+ +'</div>'
+ +'<div class="heronote">全 <b>'+(G.q+G.blk)+'</b> 問中 <b>'+(G.dq+G.df)+'</b> 問こなした。論点は全 <b>'+gCC.tot+'</b> 中 完了 <b>'+gCC.done+'</b>（'+CC_TH+'%↑）。円グラフ＝<span class="cc-done">緑:完了</span>・<span class="cc-wip">橙:着手中</span>・<span style="color:var(--muted)">灰:未着手</span>。詳細は下の「論点数進捗」。</div>'
+ +'</div>';
+h+='<div class="sec-h">科目別 論点数（カテゴリ）進捗　<span style="font-weight:400;color:var(--muted)">※各論点の達成率で判定：'+CC_TH+'%以上＝完了・1〜'+(CC_TH-1)+'%＝着手中・0%＝未着手</span></div>';
+h+='<div class="rankcard">';
+h+='<div class="ccsum">全 <b>'+gCC.tot+'</b> 論点中　<span class="cc-done">完了 '+gCC.done+'</span>・<span class="cc-wip">着手中 '+gCC.wip+'</span>・<span class="cc-todo">未着手 '+gCC.todo+'</span>'
+  +'（完了率 <b>'+Math.round(gCC.done/(gCC.tot||1)*100)+'%</b>）</div>';
+h+='<div class="cclgd"><span><i class="l-d"></i>完了('+CC_TH+'%↑)</span><span><i class="l-w"></i>着手中(1〜'+(CC_TH-1)+'%)</span><span><i class="l-t"></i>未着手(0%)</span></div>';
+ccList.slice().sort(function(a,b){return (b.b.done-a.b.done)||((b.b.done+b.b.wip)-(a.b.done+a.b.wip));}).forEach(function(s){
+  var b=s.b,tot=b.tot||1;
+  h+='<div class="ccrow"><span class="ccname">'+esc(s.name)+'</span>'
+    +'<div class="ccbar" title="完了'+b.done+'・着手中'+b.wip+'・未着手'+b.todo+'（全'+b.tot+'論点）">'
+    +(b.done?'<i class="cc-d" style="width:'+(b.done/tot*100)+'%"></i>':'')
+    +(b.wip?'<i class="cc-w" style="width:'+(b.wip/tot*100)+'%"></i>':'')
+    +'</div>'
+    +'<span class="ccnum"><b class="cc-done">'+b.done+'</b> / <span class="cc-wip">'+b.wip+'</span> / <span class="cc-todo">'+b.todo+'</span><span class="cctot">全'+b.tot+'</span></span></div>';
+});
+h+='</div>';
+h+='<div class="sec-h">科目別ランキング（問題数ベース）</div><div class="rankcard">';
+cats.forEach(function(s,i){
+  h+='<div class="rrow"><span class="rk">'+(i+1)+'</span><span class="rnm">'+esc(s.name)+'</span>'
+   +bar(s.dq,s.df,(s.q+s.blk)||1)+'<span class="frac">'+frac(s.dq,s.q,s.df,s.blk)+'</span>'
+   +'<span class="pct">'+s.pct+'%</span></div>';
+});
+h+='</div>';
 
 /* ===== ランク別・科目別×ランク別 達成率 ===== */
 var RKL=['S','A','B','C','D'];
