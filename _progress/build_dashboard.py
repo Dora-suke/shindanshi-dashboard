@@ -15,6 +15,10 @@ def keep(p):
     if os.path.basename(p)=='学習進捗ダッシュボード.html':return False
     # 経済学は「前半/後半の2ファイル」だけ集計対象にする（統合版・各論・練習問題は除外）
     if '経済学' in p and ('前半' not in p and '後半' not in p):return False
+    # 作業用の使い捨て（〇〇テスト・_編集テスト・sandbox等）は集計に混ぜない。
+    # 本物の教材と同じ論点名で二重に並んでしまうため（2026-07-17 ⑤事業再編が2行出た件）。
+    b=os.path.basename(p)
+    if re.search(r'(テスト|_sandbox|sandbox_|_完成イメージ|コピー|copy)',b,re.I):return False
     return True
 files=[p for p in glob.glob(BASE+'/**/*.html',recursive=True) if keep(p)]
 def jl(k,dv):
