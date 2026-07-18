@@ -643,6 +643,51 @@ subjTopics.forEach(function(s,i){
   var pan=document.createElement('section');pan.className='panel';pan.id='p-s'+i;
   subjpanels.appendChild(pan);
 });
+/* 📕 最終暗記タブ（別枠だけの全体進捗・科目タブの次） */
+(function(){
+  if(!EXTRA||!Object.keys(EXTRA).length)return;
+  var b=document.createElement('button');b.className='tabbtn';b.id='t-ex';b.setAttribute('role','tab');
+  b.textContent='📕 最終暗記';b.addEventListener('click',function(){show('ex');});
+  document.getElementById('tabbar').appendChild(b);
+  var p=document.createElement('section');p.className='panel';p.id='p-ex';
+  document.getElementById('subjpanels').appendChild(p);
+})();
+function renderEx(){
+  var pan=document.getElementById('p-ex');if(!pan)return;
+  var ks=Object.keys(EXTRA);
+  var A=0,B=0,BLK=0,CT=0,CD=0,CW=0;
+  ks.forEach(function(k){var e=EXTRA[k];A+=e.dq;B+=e.q;BLK+=e.blk;
+    e.cats.forEach(function(c){CT++;if(c.pct>=CC_TH)CD++;else if(c.pct>0)CW++;});});
+  var gp=B?Math.round(A/B*100):0;
+  var s1=(CD/(CT||1)*100),s2=((CD+CW)/(CT||1)*100);
+  var h='<div class="hero">'
+   +'<div class="gauge" style="--p:'+gp+'"><div class="in"><div><div class="big">'+gp+'%</div><div class="lb">最終暗記 達成率</div></div></div></div>'
+   +'<div class="gauge gauge-cc" title="論点 完了'+CD+'・着手中'+CW+'・未着手'+(CT-CD-CW)+'（全'+CT+'）" style="background:conic-gradient(var(--fill) 0 '+s1+'%,#f59e0b '+s1+'% '+s2+'%,var(--track) '+s2+'% 100%)"><div class="in"><div><div class="big">'+Math.round(CD/(CT||1)*100)+'%</div><div class="lb gcc">論点完了率</div></div></div></div>'
+   +'<div class="herostat">'
+   +'<div class="row"><span class="lg">チェック</span><div class="bar"><i class="q" style="width:'+(B?A/B*100:0)+'%"></i></div><span class="v">'+A+' / '+B+'</span></div>'
+   +'<div class="row"><span class="lg">科目</span><span class="ccmini">'+ks.length+' 科目・論点 '+CT+'</span></div>'
+   +'<div class="row"><span class="lg">論点</span><span class="ccmini"><span class="cc-done">完了'+CD+'</span>・<span class="cc-wip">着手'+CW+'</span>・<span class="cc-todo">未'+(CT-CD-CW)+'</span></span></div>'
+   +'</div>'
+   +'<div class="heronote"><b>直前用「最終暗記まとめ」だけの進捗</b>です。俯瞰タブの全体達成率とは<b>別勘定</b>（二重カウントを避けるため合算していません）。'
+   +'済＝チェック問題を<b>非表示にした数</b>／母数＝○×論点チェック＋⚡実践チェック。穴埋め'+BLK+'箇所は「済」が保存されない仕様のため母数外。</div>'
+   +'</div>';
+  h+='<div class="sec-h">科目別</div>';
+  ks.slice().sort(function(a,b2){return EXTRA[b2].pct-EXTRA[a].pct;}).forEach(function(k){
+    var e=EXTRA[k];
+    h+='<div class="exsec"><div class="exhd"><span class="ttl">'+esc(k)+'</span>'
+      +'<span class="big">'+e.pct+'%</span></div>'
+      +'<div class="exnote">'+esc(e.file.replace(/_m\.html$/,''))+'　'+e.dq+'/'+e.q+'問・論点'+e.cats.length+'・穴埋め'+e.blk+'（母数外）</div>';
+    e.cats.slice().sort(function(a,b2){return a.pct-b2.pct;}).forEach(function(c){
+      h+='<div class="exrow"><span class="enm">'+esc(c.name)+'</span>'
+        +'<div class="bar"><i class="q" style="width:'+(c.q?c.dq/c.q*100:0)+'%"></i></div>'
+        +'<span class="efr">'+c.dq+'/'+c.q+'問 穴'+c.blk+'</span>'
+        +'<span class="epc">'+c.pct+'%</span></div>';
+    });
+    h+='</div>';
+  });
+  pan.innerHTML=h;
+}
+renderEx();
 /* 更新履歴タブ（一番右＝経済学の次） */
 (function(){
   var b=document.createElement('button');b.className='tabbtn';b.id='t-log';b.setAttribute('role','tab');
@@ -725,12 +770,12 @@ function renderLog(){
   apply('recent3');
 }
 renderLog();
-/* タブ順: 総合優先 → 更新履歴 → 俯瞰 → 各科目 → 科目別詳細(最後) */
+/* タブ順: 総合優先 → 更新履歴 → 俯瞰 → 各科目 → 📕最終暗記 → 科目別詳細(最後) */
 (function(){
   var bar=document.getElementById('tabbar');
   var order=['t-pr','t-log','t-ov'];
   Array.prototype.forEach.call(bar.querySelectorAll('.tabbtn'),function(b){if(/^t-s\d+$/.test(b.id))order.push(b.id);});
-  order.push('t-dt');
+  order.push('t-ex');order.push('t-dt');
   order.forEach(function(id){var el=document.getElementById(id);if(el)bar.appendChild(el);});
 })();
 /* 科目別タブの検索（科目ごとに保持・CSS表示切替で入力を保つ） */
