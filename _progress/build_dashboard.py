@@ -95,6 +95,59 @@ def analyze(p):
     return fn,pref,tabs,out,rt_by_tab
 def cat(p):return p.replace(BASE+os.sep,'').split(os.sep)[0].replace('直前対策講座－','').replace('_冊子','')
 
+# ---- 最終暗記まとめ（別枠集計・2026-07-18） ----
+# 本体（1ヶ月前チェック）の達成率には混ぜない。科目タブの一番最後に独立ブロックで出す。
+# 構造が本体と違う：fill-card / pin_v1 を使わず、.cat（cat-head .ttl＝論点名）配下に
+# ○×論点チェック(.ronten-q) と ⚡実践チェック(.chk30-qt) が並ぶ。済＝sec-hide（非表示）。
+EXTRA_DIR=os.path.join(MATOME,'_最終暗記まとめ_サンプル')
+EXTRA_SUBJ=[('経営法務','経営法務'),('運営管理','運営管理'),('中小企業','中小企業経営・政策'),
+            ('企業経営理論','企業経営理論'),('財務会計','財務・会計'),('経営情報システム','経営情報システム')]
+_SIG=re.compile(r'[0-9A-Za-z぀-ヿ一-鿿]+')
+def sig(s):return ''.join(_SIG.findall(re.sub('<[^>]+>','',s)))   # 絵文字・記号・空白を落とした照合用キー
+def extra_subject(fn):
+    for kw,subj in EXTRA_SUBJ:
+        if kw in fn:return subj
+    return None
+def analyze_extra(p):
+    fn=os.path.basename(p)
+    html=open(p,encoding='utf-8').read()
+    html=re.sub(r'<a class="srclink".*?</a>','',html,flags=re.S)   # 参照リンク📄は本文扱いしない
+    hidden=[]
+    for k in d:
+        if k.startswith('sec-hide:') and fn in U.unquote(k):
+            vv=jl(k,{})
+            if isinstance(vv,dict):hidden+=list(vv.keys())
+    hn=[sig(re.sub(r':\d+$','',re.sub(r'^[^:]*:','',k)))[:16] for k in hidden]
+    hn=[x for x in hn if len(x)>=8]
+    ev=[]
+    for mm in re.finditer(r'<span class="ttl">(.*?)</span>',html):ev.append((mm.start(),'TTL',cleanS(mm.group(1))))
+    for mm in re.finditer(r'<div class="ronten-q">(.{1,600}?)</div>',html,re.S):ev.append((mm.start(),'Q',sig(mm.group(1))))
+    for mm in re.finditer(r'<div class="chk30-qt">(.{1,1500}?)</div>',html,re.S):ev.append((mm.start(),'Q',sig(mm.group(1))))
+    for mm in re.finditer(r'class="fill-blank"',html):ev.append((mm.start(),'BLK',''))
+    ev.sort()
+    cats=[];cur=None
+    for pos,t,v in ev:
+        if t=='TTL':cur={'name':v,'qs':[],'blk':0};cats.append(cur)
+        elif cur is None:continue
+        elif t=='Q':cur['qs'].append(v)
+        else:cur['blk']+=1
+    out=[];tot=done=blk=0
+    for c in cats:
+        if not c['qs']:continue        # 全範囲マップ・混同くらべ（問題なし）は論点として数えない
+        dn=sum(1 for q in c['qs'] if any(q.startswith(x) for x in hn))
+        out.append({'name':c['name'],'q':len(c['qs']),'dq':dn,'blk':c['blk'],
+                    'pct':round(dn/len(c['qs'])*100)})
+        tot+=len(c['qs']);done+=dn;blk+=c['blk']
+    return {'file':fn,'q':tot,'dq':done,'blk':blk,'pct':round(done/(tot or 1)*100),'cats':out}
+def build_extra():
+    ex=OrderedDict()
+    if not os.path.isdir(EXTRA_DIR):return ex
+    for fp in sorted(glob.glob(EXTRA_DIR+'/*_m.html')):
+        subj=extra_subject(os.path.basename(fp))
+        if not subj:continue
+        ex[subj]=analyze_extra(fp)
+    return ex
+
 # ---- 頻出論点ロードマップ（ランクS〜D・コスパ◎○△✕）の取り込み ----
 ROADMAP_DIR=os.path.join(os.path.dirname(BASE),'00_総合整理')
 ROADMAP_FILE={
@@ -273,13 +326,19 @@ if __name__=='__main__':
   if diff and ts and (diff['na']!=diff['oa'] or diff['tabs']):
     log.append({'ts':ts,'oa':diff['oa'],'na':diff['na'],'subs':diff['subs'],'tabs':diff['tabs']})
     save_log(log)
+  extra=build_extra()   # d は build_data() で最新notesを読み込み済み
   DATA=json.dumps(data,ensure_ascii=False)
   DIFF=json.dumps(diff,ensure_ascii=False) if diff else 'null'
   LOG=json.dumps(log,ensure_ascii=False)
+  EXTRA=json.dumps(extra,ensure_ascii=False)
   TPL=open(os.path.join(HERE,'template.html'),encoding='utf-8').read()
-  open(OUT,'w',encoding='utf-8').write(TPL.replace('__DATA__',DATA).replace('__DIFF__',DIFF).replace('__LOG__',LOG))
+  open(OUT,'w',encoding='utf-8').write(TPL.replace('__DATA__',DATA).replace('__DIFF__',DIFF)
+       .replace('__LOG__',LOG).replace('__EXTRA__',EXTRA))
   tot_a=sum(f['dq']+f['df'] for fs in data.values() for f in fs)
   tot_b=sum(f['q']+f['blk'] for fs in data.values() for f in fs)
   print('OK ->',OUT)
   print('全体 %d%%  (%d/%d)  科目%d ファイル%d'%(round(tot_a/(tot_b or 1)*100),tot_a,tot_b,len(data),sum(len(v) for v in data.values())))
+  if extra:
+    ea=sum(v['dq'] for v in extra.values());eb=sum(v['q'] for v in extra.values())
+    print('［別枠］最終暗記まとめ %d%%  (%d/%d)  科目%d'%(round(ea/(eb or 1)*100),ea,eb,len(extra)))
   if diff:print_diff(diff)

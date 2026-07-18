@@ -215,6 +215,20 @@ details[open]>summary .caret{transform:rotate(90deg)}
 .rfchip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .rkhint{font-size:.73rem;color:var(--muted);margin:16px 0 2px;line-height:1.7}
 .rkhint .cospa{display:inline-grid;width:20px;height:20px;font-size:.8rem;vertical-align:-5px;margin:0 2px}
+/* 最終暗記まとめ＝別枠（科目タブの最後・本体の達成率とは合算しない） */
+.exsec{margin:26px 0 8px;border:2px dashed #c084fc;border-radius:14px;padding:12px 12px 8px;background:rgba(192,132,252,.06)}
+.exhd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+.exhd .ttl{font-weight:900;font-size:.95rem;color:#7c3aed}
+.exhd .sep{font-size:.7rem;font-weight:800;color:#fff;background:#a855f7;border-radius:20px;padding:2px 9px}
+.exhd .big{margin-left:auto;font-weight:900;font-size:1.15rem;color:#7c3aed;font-variant-numeric:tabular-nums}
+.exnote{font-size:.71rem;color:var(--muted);line-height:1.65;margin:2px 0 9px}
+.exrow{display:grid;grid-template-columns:1fr 84px 78px 46px;gap:8px;align-items:center;
+  padding:5px 4px;border-top:1px solid rgba(168,85,247,.22);font-size:.8rem}
+.exrow .enm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exrow .efr{font-size:.7rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.exrow .epc{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}
+.exrow .bar i.q{background:#a855f7}
+@media(max-width:520px){.exrow{grid-template-columns:1fr 60px 42px}.exrow .efr{display:none}}
 .logday{margin:14px 0 6px}
 .logday-h{display:flex;align-items:baseline;gap:10px;font-weight:800;font-size:.98rem;position:sticky;top:0;background:var(--bg);padding:6px 2px;z-index:1}
 .logday-h .dt{color:var(--accent)}
@@ -278,6 +292,7 @@ button.toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 var DATA=__DATA__;
 var DIFF=__DIFF__;
 var LOG=__LOG__;
+var EXTRA=__EXTRA__;   /* 最終暗記まとめ＝別枠集計（本体の達成率には混ぜない） */
 function esc(s){return (s+'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
 /* 見出しヘッダーの表示/非表示（状態を保存） */
 (function(){
@@ -516,6 +531,23 @@ h+='<div class="legendrow"><span>数字＝達成率</span>'
  +'<span class="hb" style="background:var(--h40)"></span><span>40%〜</span>'
  +'<span class="hb" style="background:var(--h50)"></span><span>50%〜</span>'
  +'<span class="hb" style="background:var(--h60)"></span><span>60%〜</span></div></div>';
+/* 別枠：最終暗記まとめ（本体の全体達成率には合算しない） */
+(function(){
+  var ks=Object.keys(EXTRA||{});
+  if(!ks.length)return;
+  var ea=0,eb=0;ks.forEach(function(k){ea+=EXTRA[k].dq;eb+=EXTRA[k].q;});
+  h+='<div class="sec-h">📕 最終暗記まとめ（別枠）　<span style="font-weight:400;color:var(--muted)">※直前用の別ファイル。上の全体達成率・論点数進捗には<b>含めていません</b></span></div>';
+  h+='<div class="exsec"><div class="exhd"><span class="sep">別枠</span><span class="ttl">全'+ks.length+'科目 合計</span>'
+    +'<span class="big">'+Math.round(ea/(eb||1)*100)+'%</span></div>'
+    +'<div class="exnote">済＝チェック問題を非表示にした数／母数＝○×論点チェック＋⚡実践チェック '+eb+'問。各科目タブの一番下に論点別の内訳があります。</div>';
+  ks.sort(function(a,b){return EXTRA[b].pct-EXTRA[a].pct;}).forEach(function(k){
+    var e=EXTRA[k];
+    h+='<div class="exrow"><span class="enm">'+esc(k)+'</span>'
+      +'<div class="bar"><i class="q" style="width:'+(e.q?e.dq/e.q*100:0)+'%"></i></div>'
+      +'<span class="efr">'+e.dq+'/'+e.q+'問 穴'+e.blk+'</span><span class="epc">'+e.pct+'%</span></div>';
+  });
+  h+='</div>';
+})();
 ov.innerHTML=h;
 }
 renderOv();
@@ -714,6 +746,27 @@ function applySearch(pan,q){
     g.style.display=any?'':'none';
   });
 }
+/* 最終暗記まとめブロック（科目タブの一番最後・進捗は本体と完全に別勘定） */
+function extraBlock(subjName){
+  var e=EXTRA&&EXTRA[subjName];
+  if(!e||!e.cats||!e.cats.length)return '';
+  var h='<div class="exsec"><div class="exhd"><span class="sep">別枠</span>'
+    +'<span class="ttl">📕 最終暗記まとめ（'+esc(subjName)+'）</span>'
+    +'<span class="big">'+e.pct+'%</span></div>'
+    +'<div class="exnote">この進捗は<b>上のランク別集計には含めません</b>（直前用の別ファイル＝二重カウントを避けるため独立表示）。'
+    +'　済＝チェック問題を<b>非表示にした数</b>／母数＝○×論点チェック＋⚡実践チェックの全'+e.q+'問。'
+    +'　穴埋め'+e.blk+'箇所は「済」が保存されない仕様のため母数外。</div>';
+  e.cats.forEach(function(c){
+    h+='<div class="exrow"><span class="enm">'+esc(c.name)+'</span>'
+      +'<div class="bar"><i class="q" style="width:'+(c.q?c.dq/c.q*100:0)+'%"></i></div>'
+      +'<span class="efr">'+c.dq+'/'+c.q+'問 穴'+c.blk+'</span>'
+      +'<span class="epc">'+c.pct+'%</span></div>';
+  });
+  h+='<div class="exrow" style="border-top:2px solid rgba(168,85,247,.4);font-weight:900">'
+    +'<span class="enm">合計</span><div class="bar"><i class="q" style="width:'+(e.q?e.dq/e.q*100:0)+'%"></i></div>'
+    +'<span class="efr">'+e.dq+'/'+e.q+'問 穴'+e.blk+'</span><span class="epc">'+e.pct+'%</span></div>';
+  return h+'</div>';
+}
 function topicRow(t,subj){
   var mk=isMin(subj,t.name),nat=!mk&&t.pct>=CC_TH,hot=!mk&&t.pct===0;
   var pd=mk?CC_TH:t.pct;
@@ -768,6 +821,7 @@ function renderRank(s,pan){
     h+='</div>';
   }
   if(!shown)h+='<div class="rkhint" style="text-align:center">選択中のランクに該当する論点がありません。</div>';
+  h+=extraBlock(s.name);   /* 最終暗記まとめ＝この科目の一番最後（別勘定） */
   pan.innerHTML=h;
   // チップのイベント
   pan.querySelectorAll('.prfr').forEach(function(b){b.addEventListener('click',function(){
@@ -811,7 +865,7 @@ function renderItems(s,pan){
       +'<span class="pct">'+it.pct+'%</span></div>';
   });
   if(!vis.length)h+='<div class="rkhint" style="text-align:center">選択中のランクに該当する項目がありません。</div>';
-  h+='</div></div>';pan.innerHTML=h;
+  h+='</div></div>';h+=extraBlock(s.name);pan.innerHTML=h;
   pan.querySelector('.prlow').addEventListener('click',function(){prMode='low';renderPr();});
   pan.querySelector('.prhigh').addEventListener('click',function(){prMode='high';renderPr();});
   pan.querySelectorAll('.prfr').forEach(function(b){b.addEventListener('click',function(){
