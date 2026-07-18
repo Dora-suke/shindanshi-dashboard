@@ -31,6 +31,12 @@ h1{font-size:1.18rem;margin:0}.sub{color:var(--muted);font-size:.76rem;margin:2p
 .tabbtn:hover{color:var(--ink);background:color-mix(in srgb,var(--accent) 6%,transparent)}
 .tabbtn.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tabbtn:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+/* タブのドラッグ並べ替え（長押し→移動・順序はlocalStorageに保存） */
+.tabbtn.dragging{opacity:.55;transform:scale(1.06);background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:8px}
+.tabbar.reordering{touch-action:none;user-select:none}
+.tabreset{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:.7rem;
+  cursor:pointer;padding:2px 6px;opacity:.65}
+.tabreset:hover{opacity:1;color:var(--ink)}
 .panel{display:none}.panel.active{display:block}
 .bar{height:8px;border-radius:5px;background:var(--track);overflow:hidden;display:flex}
 .bar i{height:100%}.bar .q{background:var(--quiz)}.bar .f{background:var(--fill)}
@@ -65,6 +71,15 @@ h1{font-size:1.18rem;margin:0}.sub{color:var(--muted);font-size:.76rem;margin:2p
 #p-lo .herostat .lg,#p-lo .herostat .v,#p-lo .herostat .ccmini{font-size:.68rem}
 #p-lo .herostat .bar{height:5px}
 #p-lo .heronote{font-size:.62rem;padding-top:4px;line-height:1.5}
+/* ヒーロー内に積み上げバーを直接入れる（数字の重複表示を廃止して1画面に収める） */
+#p-lo .herostat .ccrow{grid-template-columns:88px 1fr 108px;padding:1px 0;gap:8px;font-size:.7rem}
+#p-lo .herostat .ccbar{height:9px}
+#p-lo .herostat .ccname{font-size:.7rem}
+#p-lo .herostat .ccnum{font-size:.7rem}
+#p-lo .lolgd{font-size:.6rem;color:var(--muted);margin-top:3px}
+#p-lo .rankcard{padding:7px 10px;margin:4px 0 10px}
+#p-lo .rankcard .ccrow{padding:2px 0;font-size:.72rem}
+#p-lo .rankcard .ccbar{height:9px}
 #p-lo .rkhint{margin:8px 0 2px}
 #p-lo .rfil{margin:5px 0}
 #p-lo .ccsum{margin:6px 0}
@@ -1075,20 +1090,17 @@ function renderLo(){
   var nNear=lows.filter(function(x){return x.t.pct>0;}).length;   /* 1〜34% */
   var okPct=nAll?Math.round(nOk/nAll*100):0;
   var g1=(nOk/(nAll||1)*100),g2=((nOk+nNear)/(nAll||1)*100);
-  var byRank={};LO_RANKS.forEach(function(rk){
-    var a=sab.filter(function(x){return x.t.rank===rk;});
-    byRank[rk]={all:a.length,lo:a.filter(function(x){return x.t.pct<LO_TH&&!isMin(x.subj,x.t.name);}).length};});
   var h='<div class="hero">'
    +'<div class="gauge" style="--p:'+okPct+'"><div class="in"><div><div class="big">'+okPct+'%</div><div class="lb">S/A/B '+LO_TH+'%到達率</div></div></div></div>'
    +'<div class="gauge gauge-cc" title="到達'+nOk+'・あと少し'+nNear+'・未着手'+zero+'（全'+nAll+'）" style="background:conic-gradient(var(--fill) 0 '+g1+'%,#f59e0b '+g1+'% '+g2+'%,var(--track) '+g2+'% 100%)"><div class="in"><div><div class="big">'+lows.length+'</div><div class="lb gcc">未達の論点</div></div></div></div>'
    +'<div class="herostat">'
-   +'<div class="row"><span class="lg">到達</span><div class="bar"><i class="f" style="width:'+g1+'%"></i></div><span class="v">'+nOk+' / '+nAll+'</span></div>'
-   +'<div class="row"><span class="lg">内訳</span><span class="ccmini"><span class="cc-done">到達'+nOk+'</span>・<span class="cc-wip">あと少し'+nNear+'</span>（1〜'+(LO_TH-1)+'%）・<span class="cc-todo">未着手'+zero+'</span></span></div>'
-   +'<div class="row"><span class="lg">ランク別</span><span class="ccmini">'
-   +LO_RANKS.map(function(rk){return '<b class="rkbadge rk-'+rk+'" style="padding:0 6px">'+rk+'</b> 未達'+byRank[rk].lo+'/'+byRank[rk].all;}).join('　')
-   +'</span></div>'
+   +statRow('全体',sab,true)
+   +LO_RANKS.map(function(rk){
+       var a=sab.filter(function(x){return x.t.rank===rk;});
+       return a.length?statRow('ランク '+rk,a,false,'<span class="rkbadge rk-'+rk+'" style="margin-right:5px">'+rk+'</span>'):'';
+     }).join('')
+   +'<div class="lolgd"><span class="cc-done">■到達'+LO_TH+'%↑</span> <span class="cc-wip">■あと少し1〜'+(LO_TH-1)+'%</span> <span class="cc-todo">■未着手0%</span>　絞り込みチップに連動</div>'
    +'</div>'
-   +'<div class="heronote">円グラフ＝<span class="cc-done">緑:'+LO_TH+'%到達</span>・<span class="cc-wip">橙:あと少し(1〜'+(LO_TH-1)+'%)</span>・<span style="color:var(--muted)">灰:未着手(0%)</span>。中央の数字＝<b>いま潰すべき論点数</b>。絞り込みチップに連動します。</div>'
    +'</div>';
   h+='<div class="rkhint">出題ランク <b>S・A・B</b> のうち、達成率が <b>'+LO_TH+'%未満</b>の論点だけを集めたタブ。'
     +(skipped?'<br><span style="color:var(--muted)">※□チェック済みで除外中：'+skipped+'論点</span>':'')+'</div>';
@@ -1109,12 +1121,12 @@ function renderLo(){
   h+='<div class="ccsum">対象 <b>'+lows.length+'</b> 論点（うち<span class="cc-todo">未着手0%: '+zero+'</span>）／絞り込み前のS・A・B未達 '
     +base.length+' 論点</div>';
   /* 到達状況の棒グラフ：全体＋科目別（S/A/Bのみ・フィルタ連動） */
-  function statRow(label,arr,strong){
+  function statRow(label,arr,strong,pre){
     var n=arr.length||1;
     var ok=arr.filter(function(x){return x.t.pct>=LO_TH||isMin(x.subj,x.t.name);}).length;
     var near=arr.filter(function(x){return x.t.pct>0&&x.t.pct<LO_TH&&!isMin(x.subj,x.t.name);}).length;
     var td=arr.length-ok-near;
-    return '<div class="ccrow"'+(strong?' style="font-weight:900"':'')+'><span class="ccname">'+esc(label)+'</span>'
+    return '<div class="ccrow"'+(strong?' style="font-weight:900"':'')+'><span class="ccname">'+(pre||'')+esc(label)+'</span>'
       +'<div class="ccbar" title="到達'+ok+'・あと少し'+near+'・未着手'+td+'（全'+arr.length+'）">'
       +(ok?'<i class="cc-d" style="width:'+(ok/n*100)+'%"></i>':'')
       +(near?'<i class="cc-w" style="width:'+(near/n*100)+'%"></i>':'')
@@ -1122,9 +1134,8 @@ function renderLo(){
       +'<span class="ccnum"><b class="cc-done">'+ok+'</b> / <span class="cc-wip">'+near+'</span> / <span class="cc-todo">'+td+'</span>'
       +'<span class="cctot">全'+arr.length+'</span></span></div>';
   }
-  h+='<div class="sec-h">到達状況（S・A・B）　<span style="font-weight:400;color:var(--muted)">※'
-    +'<span class="cc-done">到達'+LO_TH+'%↑</span> / <span class="cc-wip">あと少し1〜'+(LO_TH-1)+'%</span> / <span class="cc-todo">未着手0%</span></span></div>';
-  h+='<div class="rankcard">'+statRow('全体',sab,true);
+  h+='<div class="sec-h">科目別 到達状況</div>';
+  h+='<div class="rankcard">';
   var sBy={};sab.forEach(function(x){(sBy[x.subj]=sBy[x.subj]||[]).push(x);});
   Object.keys(sBy).sort(function(a,b){
     function loN(v){return sBy[v].filter(function(x){return x.t.pct<LO_TH&&!isMin(x.subj,x.t.name);}).length;}
@@ -1178,4 +1189,63 @@ document.getElementById('t-dt').addEventListener('click',function(){show('dt');}
 var op=false;
 tg.addEventListener('click',function(){op=!op;this.textContent=op?'すべて閉じる':'すべて展開';
   document.querySelectorAll('#p-dt details').forEach(function(d){d.open=op;});});
+
+/* ===== タブの並べ替え（ドラッグ＝長押し250msで開始・順序をlocalStorageに保存） =====
+   マウスもタッチも同じPointer Eventsで扱う。通常のタップ/クリックはタブ切替のまま。 */
+(function(){
+  var TAB_KEY='dashTabOrderV1';
+  var bar=document.getElementById('tabbar');
+  function btns(){return Array.prototype.slice.call(bar.querySelectorAll('.tabbtn'));}
+  function saveOrder(){try{localStorage.setItem(TAB_KEY,JSON.stringify(btns().map(function(b){return b.id;})));}catch(e){}}
+  /* 保存済みの順序を適用（保存後に増えたタブは末尾に残る＝消えない） */
+  (function(){
+    var saved;try{saved=JSON.parse(localStorage.getItem(TAB_KEY));}catch(e){}
+    if(!Array.isArray(saved))return;
+    saved.forEach(function(id){var el=document.getElementById(id);if(el&&el.parentNode===bar)bar.appendChild(el);});
+    btns().forEach(function(b){if(saved.indexOf(b.id)<0)bar.appendChild(b);});
+  })();
+  /* 並び順リセット */
+  var rs=document.createElement('button');rs.className='tabreset';rs.title='タブの並び順を初期状態に戻す';
+  rs.textContent='↺ 並び順';
+  rs.addEventListener('click',function(){try{localStorage.removeItem(TAB_KEY);}catch(e){}location.reload();});
+  bar.appendChild(rs);
+
+  var drag=null,timer=null,moved=false,startX=0,startY=0;
+  function begin(b){
+    drag=b;moved=false;b.classList.add('dragging');bar.classList.add('reordering');
+  }
+  function end(save){
+    if(timer){clearTimeout(timer);timer=null;}
+    if(drag){drag.classList.remove('dragging');if(save&&moved)saveOrder();}
+    drag=null;bar.classList.remove('reordering');
+  }
+  bar.addEventListener('pointerdown',function(e){
+    var b=e.target.closest&&e.target.closest('.tabbtn');
+    if(!b||e.button===2)return;
+    startX=e.clientX;startY=e.clientY;
+    timer=setTimeout(function(){begin(b);},250);
+  });
+  bar.addEventListener('pointermove',function(e){
+    if(!drag){
+      /* 長押し前に大きく動いたらドラッグ開始をやめる（スクロール優先） */
+      if(timer&&(Math.abs(e.clientX-startX)>12||Math.abs(e.clientY-startY)>12)){clearTimeout(timer);timer=null;}
+      return;
+    }
+    e.preventDefault();
+    var el=document.elementFromPoint(e.clientX,e.clientY);
+    var t=el&&el.closest?el.closest('.tabbtn'):null;
+    if(!t||t===drag||t.parentNode!==bar)return;
+    var r=t.getBoundingClientRect();
+    var before=e.clientX<r.left+r.width/2;   /* 左半分に重ねたら前へ・右半分なら後ろへ */
+    bar.insertBefore(drag,before?t:t.nextSibling);
+    moved=true;
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){
+    bar.addEventListener(ev,function(){end(true);});
+  });
+  /* ドラッグ直後のクリックでタブが切り替わらないようにする */
+  bar.addEventListener('click',function(e){
+    if(moved){e.stopPropagation();e.preventDefault();moved=false;}
+  },true);
+})();
 </script>
