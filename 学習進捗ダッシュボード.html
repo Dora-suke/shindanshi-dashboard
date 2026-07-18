@@ -775,7 +775,7 @@ renderLog();
   var bar=document.getElementById('tabbar');
   var order=['t-pr','t-log','t-ov'];
   Array.prototype.forEach.call(bar.querySelectorAll('.tabbtn'),function(b){if(/^t-s\d+$/.test(b.id))order.push(b.id);});
-  order.push('t-ex');order.push('t-dt');
+  order.push('t-ex');order.push('t-dt');order.push('t-lo');
   order.forEach(function(id){var el=document.getElementById(id);if(el)bar.appendChild(el);});
 })();
 /* 科目別タブの検索（科目ごとに保持・CSS表示切替で入力を保つ） */
@@ -1026,10 +1026,53 @@ function renderGlobal(){
   });
 }
 renderGlobal();
+
+/* ===== 🔥 未達S/A/B（ランクS・A・Bで達成率35%未満だけを集める） ===== */
+var LO_TH=35, LO_RANKS=['S','A','B'];
+(function(){
+  var b=document.createElement('button');b.className='tabbtn';b.id='t-lo';b.setAttribute('role','tab');
+  b.textContent='🔥 未達S/A/B';b.addEventListener('click',function(){show('lo');});
+  document.getElementById('tabbar').appendChild(b);
+  var p=document.createElement('section');p.className='panel';p.id='p-lo';
+  document.getElementById('subjpanels').appendChild(p);
+})();
+function renderLo(){
+  var pan=document.getElementById('p-lo');if(!pan)return;
+  /* 最低限チェック済み＝完了扱いなので除外（isDone と同じ考え方） */
+  var lows=allTopics.filter(function(x){
+    return LO_RANKS.indexOf(x.t.rank)>=0 && x.t.pct<LO_TH && !isMin(x.subj,x.t.name);
+  });
+  var skipped=allTopics.filter(function(x){
+    return LO_RANKS.indexOf(x.t.rank)>=0 && x.t.pct<LO_TH && isMin(x.subj,x.t.name);
+  }).length;
+  var bySubj={};lows.forEach(function(x){(bySubj[x.subj]=bySubj[x.subj]||[]).push(x);});
+  var zero=lows.filter(function(x){return x.t.pct===0;}).length;
+  var h='<div class="rkhint">出題ランク <b>S・A・B</b> のうち、達成率が <b>'+LO_TH+'%未満</b>の論点だけを集めたタブ。'
+    +'<br>ここが<b>本番で落とす場所</b>＝残り時間はこの一覧の上から潰すのが最短。'
+    +'<br>並び：科目ごとに ランクS→A→B、同ランクは<b>達成率の低い順</b>。左端の□にチェックすると「最低限でOK」扱いになり、この一覧から消えます。'
+    +(skipped?'<br><span style="color:var(--muted)">※□チェック済みで除外中：'+skipped+'論点</span>':'')+'</div>';
+  h+='<div class="ccsum">対象 <b>'+lows.length+'</b> 論点（うち<span class="cc-todo">未着手0%: '+zero+'</span>）／全科目のS・A・B合計 '
+    +allTopics.filter(function(x){return LO_RANKS.indexOf(x.t.rank)>=0;}).length+' 論点</div>';
+  var names=Object.keys(bySubj).sort(function(a,b){return bySubj[b].length-bySubj[a].length;});
+  if(!names.length)h+='<div class="rkhint" style="text-align:center">該当なし＝S・A・Bはすべて'+LO_TH+'%以上です。</div>';
+  names.forEach(function(n){
+    var ts=bySubj[n].slice().sort(function(a,b){
+      return (LO_RANKS.indexOf(a.t.rank)-LO_RANKS.indexOf(b.t.rank))||(a.t.pct-b.t.pct);
+    });
+    var z=ts.filter(function(x){return x.t.pct===0;}).length;
+    h+='<div class="rkgroup"><div class="rkband"><span class="rkbadge" style="background:#ef4444">'+ts.length+'</span>'
+      +'<span class="rklabel">'+esc(n)+'（'+ts.length+'論点'+(z?'・未着手'+z:'')+'）</span></div>';
+    ts.forEach(function(x){h+=growRow(x,true);});
+    h+='</div>';
+  });
+  pan.innerHTML=h;
+}
+renderLo();
 /* 最低限チェックのトグル（各科目タブ／総合優先で共有・俯瞰の完了数に即反映） */
 document.addEventListener('change',function(ev){
   var c=ev.target;if(!c||!c.classList||!c.classList.contains('mincheck'))return;
   toggleMin(c.getAttribute('data-subj'),c.getAttribute('data-tab'),c.checked);
+  if(typeof renderLo==='function')renderLo();   /* □チェックで未達一覧からも即消す */
 });
 
 var tg=document.getElementById('tg');
