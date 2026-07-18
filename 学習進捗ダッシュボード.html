@@ -1181,7 +1181,10 @@ var tg=document.getElementById('tg');
 function show(which){
   document.querySelectorAll('.tabbtn').forEach(function(b){b.classList.toggle('active',b.id==='t-'+which);});
   document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('active',p.id==='p-'+which);});
-  tg.style.display=which==='dt'?'block':'none';window.scrollTo(0,0);
+  tg.style.display=which==='dt'?'block':'none';
+  /* 🏃未達タブでは「前回からの変化」を出さない（この一覧では使わないため） */
+  var db=document.getElementById('diffbar');if(db)db.style.display=(which==='lo')?'none':'';
+  window.scrollTo(0,0);
 }
 document.getElementById('t-pr').addEventListener('click',function(){show('pr');});
 document.getElementById('t-ov').addEventListener('click',function(){show('ov');});
