@@ -1054,7 +1054,29 @@ function renderLo(){
   var skipped=base.filter(function(x){return inFil(x)&&isMin(x.subj,x.t.name);}).length;
   var bySubj={};lows.forEach(function(x){(bySubj[x.subj]=bySubj[x.subj]||[]).push(x);});
   var zero=lows.filter(function(x){return x.t.pct===0;}).length;
-  var h='<div class="rkhint">出題ランク <b>S・A・B</b> のうち、達成率が <b>'+LO_TH+'%未満</b>の論点だけを集めたタブ。'
+  /* ヒーロー：フィルタ後のS/A/B全体を「到達・あと少し・未着手」で見る */
+  var sab=allTopics.filter(function(x){return LO_RANKS.indexOf(x.t.rank)>=0&&inFil(x);});
+  var nAll=sab.length;
+  var nOk=sab.filter(function(x){return x.t.pct>=LO_TH||isMin(x.subj,x.t.name);}).length;
+  var nNear=lows.filter(function(x){return x.t.pct>0;}).length;   /* 1〜34% */
+  var okPct=nAll?Math.round(nOk/nAll*100):0;
+  var g1=(nOk/(nAll||1)*100),g2=((nOk+nNear)/(nAll||1)*100);
+  var byRank={};LO_RANKS.forEach(function(rk){
+    var a=sab.filter(function(x){return x.t.rank===rk;});
+    byRank[rk]={all:a.length,lo:a.filter(function(x){return x.t.pct<LO_TH&&!isMin(x.subj,x.t.name);}).length};});
+  var h='<div class="hero">'
+   +'<div class="gauge" style="--p:'+okPct+'"><div class="in"><div><div class="big">'+okPct+'%</div><div class="lb">S/A/B '+LO_TH+'%到達率</div></div></div></div>'
+   +'<div class="gauge gauge-cc" title="到達'+nOk+'・あと少し'+nNear+'・未着手'+zero+'（全'+nAll+'）" style="background:conic-gradient(var(--fill) 0 '+g1+'%,#f59e0b '+g1+'% '+g2+'%,var(--track) '+g2+'% 100%)"><div class="in"><div><div class="big">'+lows.length+'</div><div class="lb gcc">未達の論点</div></div></div></div>'
+   +'<div class="herostat">'
+   +'<div class="row"><span class="lg">到達</span><div class="bar"><i class="f" style="width:'+g1+'%"></i></div><span class="v">'+nOk+' / '+nAll+'</span></div>'
+   +'<div class="row"><span class="lg">内訳</span><span class="ccmini"><span class="cc-done">到達'+nOk+'</span>・<span class="cc-wip">あと少し'+nNear+'</span>（1〜'+(LO_TH-1)+'%）・<span class="cc-todo">未着手'+zero+'</span></span></div>'
+   +'<div class="row"><span class="lg">ランク別</span><span class="ccmini">'
+   +LO_RANKS.map(function(rk){return '<b class="rkbadge rk-'+rk+'" style="padding:0 6px">'+rk+'</b> 未達'+byRank[rk].lo+'/'+byRank[rk].all;}).join('　')
+   +'</span></div>'
+   +'</div>'
+   +'<div class="heronote">円グラフ＝<span class="cc-done">緑:'+LO_TH+'%到達</span>・<span class="cc-wip">橙:あと少し(1〜'+(LO_TH-1)+'%)</span>・<span style="color:var(--muted)">灰:未着手(0%)</span>。中央の数字＝<b>いま潰すべき論点数</b>。絞り込みチップに連動します。</div>'
+   +'</div>';
+  h+='<div class="rkhint">出題ランク <b>S・A・B</b> のうち、達成率が <b>'+LO_TH+'%未満</b>の論点だけを集めたタブ。'
     +'<br>ここが<b>本番で落とす場所</b>＝残り時間はこの一覧の上から潰すのが最短。'
     +'<br>並び：科目ごとに ランクS→A→B、同ランクは<b>達成率の低い順</b>。左端の□にチェックすると「最低限でOK」扱いになり、この一覧から消えます。'
     +(skipped?'<br><span style="color:var(--muted)">※□チェック済みで除外中：'+skipped+'論点</span>':'')+'</div>';
