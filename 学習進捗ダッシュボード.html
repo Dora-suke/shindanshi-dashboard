@@ -55,6 +55,20 @@ h1{font-size:1.18rem;margin:0}.sub{color:var(--muted);font-size:.76rem;margin:2p
 .herostat .ccmini .cctot{color:var(--muted);font-size:.72rem;font-weight:400}
 .heronote{grid-column:1/-1;color:var(--muted);font-size:.72rem;border-top:1px dashed var(--line);padding-top:7px;margin-top:0}
 .heronote b{color:var(--ink)}
+/* 🏃未達タブ：上部ブロックを約2/3の高さに圧縮（情報は落とさず密度を上げる） */
+#p-lo .hero{padding:7px 12px;margin:10px 0 9px;gap:11px}
+#p-lo .gauge{width:52px;height:52px}
+#p-lo .gauge .in{width:39px;height:39px}
+#p-lo .gauge .big{font-size:.82rem}
+#p-lo .gauge .lb{font-size:.42rem}
+#p-lo .herostat .row{margin:1px 0;gap:7px}
+#p-lo .herostat .lg,#p-lo .herostat .v,#p-lo .herostat .ccmini{font-size:.68rem}
+#p-lo .herostat .bar{height:5px}
+#p-lo .heronote{font-size:.62rem;padding-top:4px;line-height:1.5}
+#p-lo .rkhint{margin:8px 0 2px}
+#p-lo .rfil{margin:5px 0}
+#p-lo .ccsum{margin:6px 0}
+#p-lo .sec-h{margin:10px 0 4px}
 /* カテゴリ（論点タブ）数ベースの進捗 */
 .ccsum{font-size:.82rem;margin:2px 0 10px;color:var(--muted)}
 .ccsum b{color:var(--ink);font-size:1rem}
@@ -1077,8 +1091,6 @@ function renderLo(){
    +'<div class="heronote">円グラフ＝<span class="cc-done">緑:'+LO_TH+'%到達</span>・<span class="cc-wip">橙:あと少し(1〜'+(LO_TH-1)+'%)</span>・<span style="color:var(--muted)">灰:未着手(0%)</span>。中央の数字＝<b>いま潰すべき論点数</b>。絞り込みチップに連動します。</div>'
    +'</div>';
   h+='<div class="rkhint">出題ランク <b>S・A・B</b> のうち、達成率が <b>'+LO_TH+'%未満</b>の論点だけを集めたタブ。'
-    +'<br>ここが<b>本番で落とす場所</b>＝残り時間はこの一覧の上から潰すのが最短。'
-    +'<br>並び：科目ごとに ランクS→A→B、同ランクは<b>達成率の低い順</b>。左端の□にチェックすると「最低限でOK」扱いになり、この一覧から消えます。'
     +(skipped?'<br><span style="color:var(--muted)">※□チェック済みで除外中：'+skipped+'論点</span>':'')+'</div>';
   /* ランク絞り込み（S/A/Bのみ）＝総合優先タブと同じ操作感・状態は独立保存 */
   var rAllOn=LO_RANKS.every(function(r){return loRanks.has(r);});
@@ -1096,6 +1108,29 @@ function renderLo(){
   h+='</div>';
   h+='<div class="ccsum">対象 <b>'+lows.length+'</b> 論点（うち<span class="cc-todo">未着手0%: '+zero+'</span>）／絞り込み前のS・A・B未達 '
     +base.length+' 論点</div>';
+  /* 到達状況の棒グラフ：全体＋科目別（S/A/Bのみ・フィルタ連動） */
+  function statRow(label,arr,strong){
+    var n=arr.length||1;
+    var ok=arr.filter(function(x){return x.t.pct>=LO_TH||isMin(x.subj,x.t.name);}).length;
+    var near=arr.filter(function(x){return x.t.pct>0&&x.t.pct<LO_TH&&!isMin(x.subj,x.t.name);}).length;
+    var td=arr.length-ok-near;
+    return '<div class="ccrow"'+(strong?' style="font-weight:900"':'')+'><span class="ccname">'+esc(label)+'</span>'
+      +'<div class="ccbar" title="到達'+ok+'・あと少し'+near+'・未着手'+td+'（全'+arr.length+'）">'
+      +(ok?'<i class="cc-d" style="width:'+(ok/n*100)+'%"></i>':'')
+      +(near?'<i class="cc-w" style="width:'+(near/n*100)+'%"></i>':'')
+      +'</div>'
+      +'<span class="ccnum"><b class="cc-done">'+ok+'</b> / <span class="cc-wip">'+near+'</span> / <span class="cc-todo">'+td+'</span>'
+      +'<span class="cctot">全'+arr.length+'</span></span></div>';
+  }
+  h+='<div class="sec-h">到達状況（S・A・B）　<span style="font-weight:400;color:var(--muted)">※'
+    +'<span class="cc-done">到達'+LO_TH+'%↑</span> / <span class="cc-wip">あと少し1〜'+(LO_TH-1)+'%</span> / <span class="cc-todo">未着手0%</span></span></div>';
+  h+='<div class="rankcard">'+statRow('全体',sab,true);
+  var sBy={};sab.forEach(function(x){(sBy[x.subj]=sBy[x.subj]||[]).push(x);});
+  Object.keys(sBy).sort(function(a,b){
+    function loN(v){return sBy[v].filter(function(x){return x.t.pct<LO_TH&&!isMin(x.subj,x.t.name);}).length;}
+    return loN(b)-loN(a);
+  }).forEach(function(n){h+=statRow(n,sBy[n],false);});
+  h+='</div>';
   var names=Object.keys(bySubj).sort(function(a,b){return bySubj[b].length-bySubj[a].length;});
   if(!names.length)h+='<div class="rkhint" style="text-align:center">'
     +(base.length?'絞り込み条件に該当する論点がありません（チップで対象を広げてください）。':'該当なし＝S・A・Bはすべて'+LO_TH+'%以上です。')+'</div>';
