@@ -1029,32 +1029,54 @@ renderGlobal();
 
 /* ===== 🔥 未達S/A/B（ランクS・A・Bで達成率35%未満だけを集める） ===== */
 var LO_TH=35, LO_RANKS=['S','A','B'];
+var LO_KEY='dashLoFilV1';
+function loadLoFil(){
+  try{var o=JSON.parse(localStorage.getItem(LO_KEY))||{};
+    return {r:new Set(Array.isArray(o.r)&&o.r.length?o.r:LO_RANKS),
+            s:new Set(Array.isArray(o.s)&&o.s.length?o.s:ALL_SUBJS)};}
+  catch(e){return {r:new Set(LO_RANKS),s:new Set(ALL_SUBJS)};}
+}
+var _lof=loadLoFil(),loRanks=_lof.r,loSubjs=_lof.s;
+function saveLoFil(){try{localStorage.setItem(LO_KEY,JSON.stringify({r:Array.from(loRanks),s:Array.from(loSubjs)}));}catch(e){}}
 (function(){
   var b=document.createElement('button');b.className='tabbtn';b.id='t-lo';b.setAttribute('role','tab');
-  b.textContent='🔥 未達S/A/B';b.addEventListener('click',function(){show('lo');});
+  b.textContent='🏃 未達S/A/B';b.addEventListener('click',function(){show('lo');});
   document.getElementById('tabbar').appendChild(b);
   var p=document.createElement('section');p.className='panel';p.id='p-lo';
   document.getElementById('subjpanels').appendChild(p);
 })();
 function renderLo(){
   var pan=document.getElementById('p-lo');if(!pan)return;
-  /* 最低限チェック済み＝完了扱いなので除外（isDone と同じ考え方） */
-  var lows=allTopics.filter(function(x){
-    return LO_RANKS.indexOf(x.t.rank)>=0 && x.t.pct<LO_TH && !isMin(x.subj,x.t.name);
-  });
-  var skipped=allTopics.filter(function(x){
-    return LO_RANKS.indexOf(x.t.rank)>=0 && x.t.pct<LO_TH && isMin(x.subj,x.t.name);
-  }).length;
+  /* 最低限チェック済み＝完了扱いなので除外（isDone と同じ考え方）＋ランク/科目フィルタ */
+  function inFil(x){return loRanks.has(x.t.rank)&&loSubjs.has(x.subj);}
+  var base=allTopics.filter(function(x){return LO_RANKS.indexOf(x.t.rank)>=0 && x.t.pct<LO_TH;});
+  var lows=base.filter(function(x){return inFil(x)&&!isMin(x.subj,x.t.name);});
+  var skipped=base.filter(function(x){return inFil(x)&&isMin(x.subj,x.t.name);}).length;
   var bySubj={};lows.forEach(function(x){(bySubj[x.subj]=bySubj[x.subj]||[]).push(x);});
   var zero=lows.filter(function(x){return x.t.pct===0;}).length;
   var h='<div class="rkhint">出題ランク <b>S・A・B</b> のうち、達成率が <b>'+LO_TH+'%未満</b>の論点だけを集めたタブ。'
     +'<br>ここが<b>本番で落とす場所</b>＝残り時間はこの一覧の上から潰すのが最短。'
     +'<br>並び：科目ごとに ランクS→A→B、同ランクは<b>達成率の低い順</b>。左端の□にチェックすると「最低限でOK」扱いになり、この一覧から消えます。'
     +(skipped?'<br><span style="color:var(--muted)">※□チェック済みで除外中：'+skipped+'論点</span>':'')+'</div>';
-  h+='<div class="ccsum">対象 <b>'+lows.length+'</b> 論点（うち<span class="cc-todo">未着手0%: '+zero+'</span>）／全科目のS・A・B合計 '
-    +allTopics.filter(function(x){return LO_RANKS.indexOf(x.t.rank)>=0;}).length+' 論点</div>';
+  /* ランク絞り込み（S/A/Bのみ）＝総合優先タブと同じ操作感・状態は独立保存 */
+  var rAllOn=LO_RANKS.every(function(r){return loRanks.has(r);});
+  h+='<div class="rfil"><span class="lb">ランク絞り込み:</span>'
+    +'<button class="rfchip lofall"'+(rAllOn?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>全</button>';
+  LO_RANKS.forEach(function(rk){var on=loRanks.has(rk);
+    h+='<button class="rfchip lofr" data-r="'+rk+'"'+(on?' style="background:'+RKCOL[rk]+';color:#fff;border-color:transparent"':'')+'>'+rk+'</button>';});
+  h+='</div>';
+  /* 科目絞り込み */
+  var sAllOn=ALL_SUBJS.every(function(n){return loSubjs.has(n);});
+  h+='<div class="rfil"><span class="lb">科目絞り込み:</span>'
+    +'<button class="rfchip losfall"'+(sAllOn?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>全</button>';
+  ALL_SUBJS.forEach(function(n){var on=loSubjs.has(n);
+    h+='<button class="rfchip losf" data-subj="'+esc(n)+'"'+(on?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>'+esc(subjShort(n))+'</button>';});
+  h+='</div>';
+  h+='<div class="ccsum">対象 <b>'+lows.length+'</b> 論点（うち<span class="cc-todo">未着手0%: '+zero+'</span>）／絞り込み前のS・A・B未達 '
+    +base.length+' 論点</div>';
   var names=Object.keys(bySubj).sort(function(a,b){return bySubj[b].length-bySubj[a].length;});
-  if(!names.length)h+='<div class="rkhint" style="text-align:center">該当なし＝S・A・Bはすべて'+LO_TH+'%以上です。</div>';
+  if(!names.length)h+='<div class="rkhint" style="text-align:center">'
+    +(base.length?'絞り込み条件に該当する論点がありません（チップで対象を広げてください）。':'該当なし＝S・A・Bはすべて'+LO_TH+'%以上です。')+'</div>';
   names.forEach(function(n){
     var ts=bySubj[n].slice().sort(function(a,b){
       return (LO_RANKS.indexOf(a.t.rank)-LO_RANKS.indexOf(b.t.rank))||(a.t.pct-b.t.pct);
@@ -1066,6 +1088,18 @@ function renderLo(){
     h+='</div>';
   });
   pan.innerHTML=h;
+  pan.querySelectorAll('.lofr').forEach(function(b){b.addEventListener('click',function(){
+    var r=b.getAttribute('data-r');if(loRanks.has(r))loRanks.delete(r);else loRanks.add(r);saveLoFil();renderLo();});});
+  var lfa=pan.querySelector('.lofall');
+  if(lfa)lfa.addEventListener('click',function(){
+    if(LO_RANKS.every(function(r){return loRanks.has(r);}))loRanks=new Set();else loRanks=new Set(LO_RANKS);
+    saveLoFil();renderLo();});
+  pan.querySelectorAll('.losf').forEach(function(b){b.addEventListener('click',function(){
+    var n=b.getAttribute('data-subj');if(loSubjs.has(n))loSubjs.delete(n);else loSubjs.add(n);saveLoFil();renderLo();});});
+  var lsa=pan.querySelector('.losfall');
+  if(lsa)lsa.addEventListener('click',function(){
+    if(ALL_SUBJS.every(function(n){return loSubjs.has(n);}))loSubjs=new Set();else loSubjs=new Set(ALL_SUBJS);
+    saveLoFil();renderLo();});
 }
 renderLo();
 /* 最低限チェックのトグル（各科目タブ／総合優先で共有・俯瞰の完了数に即反映） */
