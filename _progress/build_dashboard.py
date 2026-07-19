@@ -168,6 +168,11 @@ def analyze_extra(p,subject=None,rm=None):
         name=cleanS(tm.group(1)) if tm else tid
         qs=[sig(mm.group(1)) for mm in re.finditer(r'<div class="ronten-q">(.{1,600}?)</div>',seg,re.S)]
         qs+=[sig(mm.group(1)) for mm in re.finditer(r'<div class="chk30-qt">(.{1,1500}?)</div>',seg,re.S)]
+        # ズバリ！予想問題（.yoso-wrap）も1問＝1単位。非表示キーは 'yoso-wrap:<本文40字>:<番号>'
+        ypos=[mm.start() for mm in re.finditer(r'<div class="yoso-wrap"',seg)]
+        for n,sp in enumerate(ypos):
+            ep=ypos[n+1] if n+1<len(ypos) else min(len(seg),sp+3000)
+            qs.append(sig(seg[sp:ep]))
         rows=len(re.findall(r'class="row"',seg))
         blanks=len(re.findall(r'class="fill-blank"',seg))
         # この論点に含まれる表の行（td を持つ tbody 内 tr のみ＝ヘッダ行は除外）
