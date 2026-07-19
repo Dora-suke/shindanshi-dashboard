@@ -188,6 +188,26 @@ def analyze_extra(p,subject=None,rm=None):
                     'rank':rk,'cospa':cs})
         tot+=den;done+=num;blk+=blanks
     return {'file':fn,'q':tot,'dq':done,'blk':blk,'pct':round(done/(tot or 1)*100),'cats':out}
+def extra_diff(old,new):
+    """最終暗記まとめの前回差分（科目別・論点別）。本体の差分とは別枠で表示する。"""
+    oa=sum(v['dq'] for v in old.values());ob=sum(v['q'] for v in old.values())
+    na=sum(v['dq'] for v in new.values());nb=sum(v['q'] for v in new.values())
+    subs=[];cats=[]
+    for s,v in new.items():
+        ov=old.get(s)
+        if not ov:continue
+        dsub=v['dq']-ov['dq']
+        if dsub:subs.append({'name':s,'d':dsub})
+        omap={c['name']:c for c in ov['cats']}
+        for c in v['cats']:
+            oc=omap.get(c['name'])
+            if not oc:continue
+            dn=c['num']-oc['num']
+            if not dn:continue
+            cats.append({'subj':s,'tab':c['name'],'d':dn,'op':oc['pct'],'np':c['pct'],
+                         'drow':c['drows']-oc['drows'],'dtr':c['dtrs']-oc.get('dtrs',0),'dq':c['dq']-oc['dq']})
+    subs.sort(key=lambda x:-x['d']);cats.sort(key=lambda x:-x['d'])
+    return {'oa':oa,'na':na,'ob':ob,'nb':nb,'subs':subs,'cats':cats}
 def build_extra():
     ex=OrderedDict()
     if not os.path.isdir(EXTRA_DIR):return ex
@@ -348,10 +368,21 @@ def compute_diff(old,new):
           'subs':[{'name':s,'d':n} for s,n in sorted(subs.items(),key=lambda x:-x[1])],'tabs':tabs}
 def print_diff(df):
   print('━━━ 更新差分 ━━━')
-  if df['na']==df['oa'] and not df['tabs']:print('  変化なし')
+  ex0=df.get('extra')
+  if df['na']==df['oa'] and not df['tabs'] and not (ex0 and (ex0['na']!=ex0['oa'] or ex0['cats'])):print('  変化なし')
   print('  達成 %d → %d (%+d)  %d%% → %d%%'%(df['oa'],df['na'],df['na']-df['oa'],
         round(df['oa']/(df['ob'] or 1)*100),round(df['na']/(df['nb'] or 1)*100)))
   if df['subs']:print('  科目別: '+' / '.join('%s +%d'%(s['name'],s['d']) for s in df['subs']))
+  ex=df.get('extra')
+  if ex and (ex['na']!=ex['oa'] or ex['cats']):
+    print('  ［最終暗記］%d → %d (%+d)  %d%% → %d%%'%(ex['oa'],ex['na'],ex['na']-ex['oa'],
+          round(ex['oa']/(ex['ob'] or 1)*100),round(ex['na']/(ex['nb'] or 1)*100)))
+    for c in ex['cats']:
+      seg=[]
+      if c['drow']:seg.append('穴埋め行%+d'%c['drow'])
+      if c['dtr']:seg.append('表%+d'%c['dtr'])
+      if c['dq']:seg.append('チェック%+d'%c['dq'])
+      print('   [%s] %s：%s  %d%%→%d%%'%(c['subj'],c['tab'],'・'.join(seg),c['op'],c['np']))
   for t in df['tabs']:
     seg=[]
     if t['ddq']:seg.append('クイズ%+d'%t['ddq'])
@@ -379,8 +410,11 @@ if __name__=='__main__':
     save_log(log)
   # ⚠ build_data(prev) がグローバル d を前回notesに差し替えるので、必ず最新を読み直してから集計する
   #   （これを忘れると最終暗記まとめの進捗が常に1回分古くなる。2026-07-19に発生）
+  extra_prev=build_extra() if (prev and os.path.exists(prev)) else None   # ここでは d=前回notes
   d=json.load(open(notes_path,encoding='utf-8'))
   extra=build_extra()
+  if diff is not None:
+    diff['extra']=extra_diff(extra_prev,extra) if extra_prev else None
   DATA=json.dumps(data,ensure_ascii=False)
   DIFF=json.dumps(diff,ensure_ascii=False) if diff else 'null'
   LOG=json.dumps(log,ensure_ascii=False)

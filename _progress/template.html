@@ -360,6 +360,8 @@ var gpct=pctOf(G.dq+G.df,G.q+G.blk);
 /* 差分バー（全タブ共通・ヘッダー直下に常時表示） */
 if(DIFF){
   var dd=DIFF.na-DIFF.oa, changed=DIFF.tabs&&DIFF.tabs.length;
+  var EX=DIFF.extra, exChanged=!!(EX&&(EX.na!==EX.oa||(EX.cats&&EX.cats.length)));
+  changed=changed||exChanged;
   var dh='<div class="diff'+(changed?'':' none')+'">'
     +'<div class="diffhd"><span class="difftag">前回からの変化</span>'
     +(changed?('<span class="diffmain">達成 '+DIFF.oa+' → '+DIFF.na+' <span class="diffdelta">('+(dd>=0?'+':'')+dd+')</span></span>')
@@ -377,6 +379,30 @@ if(DIFF){
         +'<span class="dt-p">'+t.op+'%→'+t.np+'%</span></div>';
     });
     dh+='</div>';
+  }
+  /* 📕最終暗記まとめの変化（別枠・本体には合算しない） */
+  if(exChanged){
+    var ed=EX.na-EX.oa;
+    dh+='<div class="diffhd" style="margin-top:6px;border-top:1px dashed var(--line);padding-top:6px">'
+      +'<span class="difftag" style="background:#a855f7">📕最終暗記</span>'
+      +'<span class="diffmain">たたんだ数 '+EX.oa+' → '+EX.na+' <span class="diffdelta">('+(ed>=0?'+':'')+ed+')</span></span>'
+      +'<span class="diffsub">'+pctOf(EX.oa,EX.ob)+'% → '+pctOf(EX.na,EX.nb)+'%'
+      +(EX.subs&&EX.subs.length?'　｜　'+EX.subs.map(function(s){return esc(s.name)+' '+(s.d>=0?'+':'')+s.d;}).join(' / '):'')
+      +'</span></div>';
+    if(EX.cats&&EX.cats.length){
+      dh+='<div class="difftabs">';
+      EX.cats.forEach(function(c){
+        var seg=[];
+        if(c.drow)seg.push('穴埋め行'+(c.drow>0?'+':'')+c.drow);
+        if(c.dtr)seg.push('表'+(c.dtr>0?'+':'')+c.dtr);
+        if(c.dq)seg.push('チェック'+(c.dq>0?'+':'')+c.dq);
+        dh+='<div class="difftab"><span class="dt-s">📕'+esc(c.subj)+'</span>'
+          +'<span class="dt-n">'+esc(c.tab)+'</span>'
+          +'<span class="dt-d">'+seg.join('・')+'</span>'
+          +'<span class="dt-p">'+c.op+'%→'+c.np+'%</span></div>';
+      });
+      dh+='</div>';
+    }
   }
   dh+='</div>';
   document.getElementById('diffbar').innerHTML=dh;
