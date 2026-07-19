@@ -731,12 +731,27 @@ subjTopics.forEach(function(s,i){
   var p=document.createElement('section');p.className='panel';p.id='p-ex';
   document.getElementById('subjpanels').appendChild(p);
 })();
+/* 最終暗記タブのランク絞り込み（未設定は '_un'・状態はlocalStorageへ） */
+var EX_KEY='dashExRankV1';
+var exRanks=(function(){
+  try{var a=JSON.parse(localStorage.getItem(EX_KEY));
+    if(Array.isArray(a)&&a.length)return new Set(a);}catch(e){}
+  return new Set(RANKS.concat(['_un']));
+})();
+function saveExRanks(){try{localStorage.setItem(EX_KEY,JSON.stringify(Array.from(exRanks)));}catch(e){}}
+function exCatOn(c){return exRanks.has(c.rank||'_un');}
 function renderEx(){
   var pan=document.getElementById('p-ex');if(!pan)return;
   var ks=Object.keys(EXTRA);
+  /* 絞り込み後の論点だけで集計する（ゲージもチップに連動） */
   var A=0,B=0,BLK=0,CT=0,CD=0,CW=0;
-  ks.forEach(function(k){var e=EXTRA[k];A+=e.dq;B+=e.q;BLK+=e.blk;
-    e.cats.forEach(function(c){CT++;if(c.pct>=CC_TH)CD++;else if(c.pct>0)CW++;});});
+  ks.forEach(function(k){
+    EXTRA[k].cats.forEach(function(c){
+      if(!exCatOn(c))return;
+      A+=c.dq;B+=c.q;BLK+=c.blk;CT++;
+      if(c.pct>=CC_TH)CD++;else if(c.pct>0)CW++;
+    });
+  });
   var gp=B?Math.round(A/B*100):0;
   var s1=(CD/(CT||1)*100),s2=((CD+CW)/(CT||1)*100);
   var h='<div class="hero">'
@@ -750,21 +765,53 @@ function renderEx(){
    +'<div class="heronote"><b>直前用「最終暗記まとめ」だけの進捗</b>です。俯瞰タブの全体達成率とは<b>別勘定</b>（二重カウントを避けるため合算していません）。'
    +'済＝チェック問題を<b>非表示にした数</b>／母数＝○×論点チェック＋⚡実践チェック。穴埋め'+BLK+'箇所は「済」が保存されない仕様のため母数外。</div>'
    +'</div>';
+  /* ランク絞り込みチップ（ランクは頻出論点ロードマップ由来・タブ名に埋め込まれた（S・◯%）も採用） */
+  var exKeys=RANKS.concat(['_un']);
+  var exAllOn=exKeys.every(function(r){return exRanks.has(r);});
+  h+='<div class="rfil"><span class="lb">ランク絞り込み:</span>'
+    +'<button class="rfchip exfall"'+(exAllOn?' style="background:var(--accent);color:#fff;border-color:transparent"':'')+'>全</button>';
+  RANKS.forEach(function(rk){
+    var has=ks.some(function(k){return EXTRA[k].cats.some(function(c){return c.rank===rk;});});
+    if(!has)return;
+    var on=exRanks.has(rk);
+    h+='<button class="rfchip exfr" data-r="'+rk+'"'+(on?' style="background:'+RKCOL[rk]+';color:#fff;border-color:transparent"':'')+'>'+rk+'</button>';
+  });
+  if(ks.some(function(k){return EXTRA[k].cats.some(function(c){return !c.rank;});})){
+    var onu=exRanks.has('_un');
+    h+='<button class="rfchip exfr" data-r="_un"'+(onu?' style="background:#94a3b8;color:#fff;border-color:transparent"':'')+'>未</button>';
+  }
+  h+='</div>';
   h+='<div class="sec-h">科目別</div>';
+  var anyShown=false;
   ks.slice().sort(function(a,b2){return EXTRA[b2].pct-EXTRA[a].pct;}).forEach(function(k){
     var e=EXTRA[k];
+    var cats=e.cats.filter(exCatOn);
+    if(!cats.length)return;
+    anyShown=true;
+    var sq=0,sdq=0,sblk=0;
+    cats.forEach(function(c){sq+=c.q;sdq+=c.dq;sblk+=c.blk;});
+    var spct=sq?Math.round(sdq/sq*100):0;
     h+='<div class="exsec"><div class="exhd"><span class="ttl">'+esc(k)+'</span>'
-      +'<span class="big">'+e.pct+'%</span></div>'
-      +'<div class="exnote">'+esc(e.file.replace(/_m\.html$/,''))+'　'+e.dq+'/'+e.q+'問・論点'+e.cats.length+'・穴埋め'+e.blk+'（母数外）</div>';
-    e.cats.slice().sort(function(a,b2){return a.pct-b2.pct;}).forEach(function(c){
-      h+='<div class="exrow"><span class="enm">'+esc(c.name)+'</span>'
+      +'<span class="big">'+spct+'%</span></div>'
+      +'<div class="exnote">'+esc(e.file.replace(/_m\.html$/,''))+'　'+sdq+'/'+sq+'問・論点'+cats.length
+      +(cats.length!==e.cats.length?'（全'+e.cats.length+'中）':'')+'・穴埋め'+sblk+'（母数外）</div>';
+    cats.slice().sort(function(a,b2){return a.pct-b2.pct;}).forEach(function(c){
+      var rb=c.rank?'<span class="rkbadge rk-'+c.rank+'" style="margin-right:5px">'+c.rank+'</span>':'';
+      h+='<div class="exrow"><span class="enm">'+rb+esc(c.name)+'</span>'
         +'<div class="bar"><i class="q" style="width:'+(c.q?c.dq/c.q*100:0)+'%"></i></div>'
         +'<span class="efr">'+c.dq+'/'+c.q+'問 穴'+c.blk+'</span>'
         +'<span class="epc">'+c.pct+'%</span></div>';
     });
     h+='</div>';
   });
+  if(!anyShown)h+='<div class="rkhint" style="text-align:center">選択中のランクに該当する論点がありません。</div>';
   pan.innerHTML=h;
+  pan.querySelectorAll('.exfr').forEach(function(b){b.addEventListener('click',function(){
+    var r=b.getAttribute('data-r');if(exRanks.has(r))exRanks.delete(r);else exRanks.add(r);saveExRanks();renderEx();});});
+  var efa=pan.querySelector('.exfall');
+  if(efa)efa.addEventListener('click',function(){
+    if(exKeys.every(function(r){return exRanks.has(r);}))exRanks=new Set();else exRanks=new Set(exKeys);
+    saveExRanks();renderEx();});
 }
 renderEx();
 /* 更新履歴タブ（一番右＝経済学の次） */

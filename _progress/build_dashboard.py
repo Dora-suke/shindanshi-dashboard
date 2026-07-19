@@ -108,7 +108,19 @@ def extra_subject(fn):
     for kw,subj in EXTRA_SUBJ:
         if kw in fn:return subj
     return None
-def analyze_extra(p):
+def extra_rank(subject,name,rm):
+    """最終暗記まとめの論点名からランク/コスパを引く。
+    ①タブ名に『（S・55%）』のようにランクが埋め込まれていればそれを採用
+    ②無ければ本体と同じ ROADMAP_KW で頻出論点ロードマップから引く"""
+    m=re.search(r'[（(]\s*([SABCDE])\s*[・･]',name)
+    if m:
+        cos=rm.get(name,('',''))[1] if name in rm else ''
+        return m.group(1),cos
+    base=re.sub(r'[（(].*?[）)]','',name)
+    for kw,nm in ROADMAP_KW.get(subject,[]):
+        if kw in base and nm in rm:return rm[nm]
+    return None,None
+def analyze_extra(p,subject=None,rm=None):
     fn=os.path.basename(p)
     html=open(p,encoding='utf-8').read()
     html=re.sub(r'<a class="srclink".*?</a>','',html,flags=re.S)   # 参照リンク📄は本文扱いしない
@@ -135,17 +147,20 @@ def analyze_extra(p):
     for c in cats:
         if not c['qs']:continue        # 全範囲マップ・混同くらべ（問題なし）は論点として数えない
         dn=sum(1 for q in c['qs'] if any(q.startswith(x) for x in hn))
+        rk,cs=extra_rank(subject,c['name'],rm or {}) if subject else (None,None)
         out.append({'name':c['name'],'q':len(c['qs']),'dq':dn,'blk':c['blk'],
-                    'pct':round(dn/len(c['qs'])*100)})
+                    'pct':round(dn/len(c['qs'])*100),'rank':rk,'cospa':cs})
         tot+=len(c['qs']);done+=dn;blk+=c['blk']
     return {'file':fn,'q':tot,'dq':done,'blk':blk,'pct':round(done/(tot or 1)*100),'cats':out}
 def build_extra():
     ex=OrderedDict()
     if not os.path.isdir(EXTRA_DIR):return ex
+    RM={}
     for fp in sorted(glob.glob(EXTRA_DIR+'/*_m.html')):
         subj=extra_subject(os.path.basename(fp))
         if not subj:continue
-        ex[subj]=analyze_extra(fp)
+        if subj not in RM:RM[subj]=load_roadmap(subj)
+        ex[subj]=analyze_extra(fp,subj,RM[subj])
     return ex
 
 # ---- 頻出論点ロードマップ（ランクS〜D・コスパ◎○△✕）の取り込み ----
@@ -326,7 +341,10 @@ if __name__=='__main__':
   if diff and ts and (diff['na']!=diff['oa'] or diff['tabs']):
     log.append({'ts':ts,'oa':diff['oa'],'na':diff['na'],'subs':diff['subs'],'tabs':diff['tabs']})
     save_log(log)
-  extra=build_extra()   # d は build_data() で最新notesを読み込み済み
+  # ⚠ build_data(prev) がグローバル d を前回notesに差し替えるので、必ず最新を読み直してから集計する
+  #   （これを忘れると最終暗記まとめの進捗が常に1回分古くなる。2026-07-19に発生）
+  d=json.load(open(notes_path,encoding='utf-8'))
+  extra=build_extra()
   DATA=json.dumps(data,ensure_ascii=False)
   DIFF=json.dumps(diff,ensure_ascii=False) if diff else 'null'
   LOG=json.dumps(log,ensure_ascii=False)
