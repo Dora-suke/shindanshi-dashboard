@@ -131,26 +131,39 @@ def analyze_extra(p,subject=None,rm=None):
             if isinstance(vv,dict):hidden+=list(vv.keys())
     hn=[sig(re.sub(r':\d+$','',re.sub(r'^[^:]*:','',k)))[:16] for k in hidden]
     hn=[x for x in hn if len(x)>=8]
-    ev=[]
-    for mm in re.finditer(r'<span class="ttl">(.*?)</span>',html):ev.append((mm.start(),'TTL',cleanS(mm.group(1))))
-    for mm in re.finditer(r'<div class="ronten-q">(.{1,600}?)</div>',html,re.S):ev.append((mm.start(),'Q',sig(mm.group(1))))
-    for mm in re.finditer(r'<div class="chk30-qt">(.{1,1500}?)</div>',html,re.S):ev.append((mm.start(),'Q',sig(mm.group(1))))
-    for mm in re.finditer(r'class="fill-blank"',html):ev.append((mm.start(),'BLK',''))
-    ev.sort()
-    cats=[];cur=None
-    for pos,t,v in ev:
-        if t=='TTL':cur={'name':v,'qs':[],'blk':0};cats.append(cur)
-        elif cur is None:continue
-        elif t=='Q':cur['qs'].append(v)
-        else:cur['blk']+=1
+    # 穴埋め行(.row)の「たたむ＝完了」は mmzhide_<pathname> に {tabN:行番号:1} で保存される。
+    # ノート自身の進捗ヒートマップ(szUpdateProg)もこの hid/tot で計算しているので、同じ基準に揃える。
+    rowhide={}   # tab id -> 非表示にした行数
+    for k in d:
+        u=U.unquote(k)
+        if u.startswith('mmzhide_') and u.endswith(fn):
+            vv=jl(k,{})
+            if isinstance(vv,dict):
+                for kk,on in vv.items():
+                    if not on:continue
+                    tid=kk.split(':')[0]
+                    rowhide[tid]=rowhide.get(tid,0)+1
+    # 1つの .tab-content = 1論点（cat-head の .ttl が論点名）
+    segs=[(mm.start(),mm.group(1)) for mm in re.finditer(r'<div class="tab-content"[^>]*id="(tab\d+)"',html)]
     out=[];tot=done=blk=0
-    for c in cats:
-        if not c['qs']:continue        # 全範囲マップ・混同くらべ（問題なし）は論点として数えない
-        dn=sum(1 for q in c['qs'] if any(q.startswith(x) for x in hn))
-        rk,cs=extra_rank(subject,c['name'],rm or {}) if subject else (None,None)
-        out.append({'name':c['name'],'q':len(c['qs']),'dq':dn,'blk':c['blk'],
-                    'pct':round(dn/len(c['qs'])*100),'rank':rk,'cospa':cs})
-        tot+=len(c['qs']);done+=dn;blk+=c['blk']
+    for idx,(pos,tid) in enumerate(segs):
+        end=segs[idx+1][0] if idx+1<len(segs) else len(html)
+        seg=html[pos:end]
+        tm=re.search(r'<span class="ttl">(.*?)</span>',seg)
+        name=cleanS(tm.group(1)) if tm else tid
+        qs=[sig(mm.group(1)) for mm in re.finditer(r'<div class="ronten-q">(.{1,600}?)</div>',seg,re.S)]
+        qs+=[sig(mm.group(1)) for mm in re.finditer(r'<div class="chk30-qt">(.{1,1500}?)</div>',seg,re.S)]
+        rows=len(re.findall(r'class="row"',seg))
+        blanks=len(re.findall(r'class="fill-blank"',seg))
+        if not qs and not rows:continue      # 全範囲マップ等（中身なし）は論点として数えない
+        qdone=sum(1 for q in qs if any(q.startswith(x) for x in hn))
+        rdone=min(rowhide.get(tid,0),rows)
+        den=len(qs)+rows
+        rk,cs=extra_rank(subject,name,rm or {}) if subject else (None,None)
+        out.append({'name':name,'q':len(qs),'dq':qdone,'rows':rows,'drows':rdone,'blk':blanks,
+                    'den':den,'num':qdone+rdone,'pct':round((qdone+rdone)/(den or 1)*100),
+                    'rank':rk,'cospa':cs})
+        tot+=den;done+=qdone+rdone;blk+=blanks
     return {'file':fn,'q':tot,'dq':done,'blk':blk,'pct':round(done/(tot or 1)*100),'cats':out}
 def build_extra():
     ex=OrderedDict()

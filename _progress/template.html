@@ -581,12 +581,12 @@ h+='<div class="legendrow"><span>数字＝達成率</span>'
   h+='<div class="sec-h">📕 最終暗記まとめ（別枠）　<span style="font-weight:400;color:var(--muted)">※直前用の別ファイル。上の全体達成率・論点数進捗には<b>含めていません</b></span></div>';
   h+='<div class="exsec"><div class="exhd"><span class="sep">別枠</span><span class="ttl">全'+ks.length+'科目 合計</span>'
     +'<span class="big">'+Math.round(ea/(eb||1)*100)+'%</span></div>'
-    +'<div class="exnote">済＝チェック問題を非表示にした数／母数＝○×論点チェック＋⚡実践チェック '+eb+'問。各科目タブの一番下に論点別の内訳があります。</div>';
+    +'<div class="exnote">済＝<b>たたんだ（非表示にした）数</b>＝穴埋め行＋○×論点チェック＋⚡実践チェック（計'+eb+'）。各科目タブの一番下に論点別の内訳があります。</div>';
   ks.sort(function(a,b){return EXTRA[b].pct-EXTRA[a].pct;}).forEach(function(k){
     var e=EXTRA[k];
     h+='<div class="exrow"><span class="enm">'+esc(k)+'</span>'
       +'<div class="bar"><i class="q" style="width:'+(e.q?e.dq/e.q*100:0)+'%"></i></div>'
-      +'<span class="efr">'+e.dq+'/'+e.q+'問 穴'+e.blk+'</span><span class="epc">'+e.pct+'%</span></div>';
+      +'<span class="efr">'+e.dq+'/'+e.q+'</span><span class="epc">'+e.pct+'%</span></div>';
   });
   h+='</div>';
 })();
@@ -748,7 +748,7 @@ function renderEx(){
   ks.forEach(function(k){
     EXTRA[k].cats.forEach(function(c){
       if(!exCatOn(c))return;
-      A+=c.dq;B+=c.q;BLK+=c.blk;CT++;
+      A+=c.num;B+=c.den;BLK+=c.blk;CT++;
       if(c.pct>=CC_TH)CD++;else if(c.pct>0)CW++;
     });
   });
@@ -758,12 +758,12 @@ function renderEx(){
    +'<div class="gauge" style="--p:'+gp+'"><div class="in"><div><div class="big">'+gp+'%</div><div class="lb">最終暗記 達成率</div></div></div></div>'
    +'<div class="gauge gauge-cc" title="論点 完了'+CD+'・着手中'+CW+'・未着手'+(CT-CD-CW)+'（全'+CT+'）" style="background:conic-gradient(var(--fill) 0 '+s1+'%,#f59e0b '+s1+'% '+s2+'%,var(--track) '+s2+'% 100%)"><div class="in"><div><div class="big">'+Math.round(CD/(CT||1)*100)+'%</div><div class="lb gcc">論点完了率</div></div></div></div>'
    +'<div class="herostat">'
-   +'<div class="row"><span class="lg">チェック</span><div class="bar"><i class="q" style="width:'+(B?A/B*100:0)+'%"></i></div><span class="v">'+A+' / '+B+'</span></div>'
+   +'<div class="row"><span class="lg">たたんだ数</span><div class="bar"><i class="q" style="width:'+(B?A/B*100:0)+'%"></i></div><span class="v">'+A+' / '+B+'</span></div>'
    +'<div class="row"><span class="lg">科目</span><span class="ccmini">'+ks.length+' 科目・論点 '+CT+'</span></div>'
    +'<div class="row"><span class="lg">論点</span><span class="ccmini"><span class="cc-done">完了'+CD+'</span>・<span class="cc-wip">着手'+CW+'</span>・<span class="cc-todo">未'+(CT-CD-CW)+'</span></span></div>'
    +'</div>'
    +'<div class="heronote"><b>直前用「最終暗記まとめ」だけの進捗</b>です。俯瞰タブの全体達成率とは<b>別勘定</b>（二重カウントを避けるため合算していません）。'
-   +'済＝チェック問題を<b>非表示にした数</b>／母数＝○×論点チェック＋⚡実践チェック。穴埋め'+BLK+'箇所は「済」が保存されない仕様のため母数外。</div>'
+   +'済＝<b>たたんだ（非表示にした）数</b>＝穴埋め行の🙈＋○×論点チェック＋⚡実践チェック。ノート内の進捗ヒートマップと同じ基準です。</div>'
    +'</div>';
   /* ランク絞り込みチップ（ランクは頻出論点ロードマップ由来・タブ名に埋め込まれた（S・◯%）も採用） */
   var exKeys=RANKS.concat(['_un']);
@@ -789,17 +789,17 @@ function renderEx(){
     if(!cats.length)return;
     anyShown=true;
     var sq=0,sdq=0,sblk=0;
-    cats.forEach(function(c){sq+=c.q;sdq+=c.dq;sblk+=c.blk;});
+    cats.forEach(function(c){sq+=c.den;sdq+=c.num;sblk+=c.blk;});
     var spct=sq?Math.round(sdq/sq*100):0;
     h+='<div class="exsec"><div class="exhd"><span class="ttl">'+esc(k)+'</span>'
       +'<span class="big">'+spct+'%</span></div>'
-      +'<div class="exnote">'+esc(e.file.replace(/_m\.html$/,''))+'　'+sdq+'/'+sq+'問・論点'+cats.length
-      +(cats.length!==e.cats.length?'（全'+e.cats.length+'中）':'')+'・穴埋め'+sblk+'（母数外）</div>';
+      +'<div class="exnote">'+esc(e.file.replace(/_m\.html$/,''))+'　'+sdq+'/'+sq+'（穴埋め行＋チェック）・論点'+cats.length
+      +(cats.length!==e.cats.length?'（全'+e.cats.length+'中）':'')+'</div>';
     cats.slice().sort(function(a,b2){return a.pct-b2.pct;}).forEach(function(c){
       var rb=c.rank?'<span class="rkbadge rk-'+c.rank+'" style="margin-right:5px">'+c.rank+'</span>':'';
       h+='<div class="exrow"><span class="enm">'+rb+esc(c.name)+'</span>'
-        +'<div class="bar"><i class="q" style="width:'+(c.q?c.dq/c.q*100:0)+'%"></i></div>'
-        +'<span class="efr">'+c.dq+'/'+c.q+'問 穴'+c.blk+'</span>'
+        +'<div class="bar"><i class="q" style="width:'+(c.den?c.num/c.den*100:0)+'%"></i></div>'
+        +'<span class="efr" title="穴埋め行 '+c.drows+'/'+c.rows+'・チェック '+c.dq+'/'+c.q+'">行'+c.drows+'/'+c.rows+' 問'+c.dq+'/'+c.q+'</span>'
         +'<span class="epc">'+c.pct+'%</span></div>';
     });
     h+='</div>';
@@ -925,17 +925,17 @@ function extraBlock(subjName){
     +'<span class="ttl">📕 最終暗記まとめ（'+esc(subjName)+'）</span>'
     +'<span class="big">'+e.pct+'%</span></div>'
     +'<div class="exnote">この進捗は<b>上のランク別集計には含めません</b>（直前用の別ファイル＝二重カウントを避けるため独立表示）。'
-    +'　済＝チェック問題を<b>非表示にした数</b>／母数＝○×論点チェック＋⚡実践チェックの全'+e.q+'問。'
-    +'　穴埋め'+e.blk+'箇所は「済」が保存されない仕様のため母数外。</div>';
+    +'　済＝<b>たたんだ（非表示にした）数</b>＝穴埋め行＋○×論点チェック＋⚡実践チェックの全'+e.q+'。'
+    +'　ノート内の進捗ヒートマップと同じ基準です。</div>';
   e.cats.forEach(function(c){
     h+='<div class="exrow"><span class="enm">'+esc(c.name)+'</span>'
-      +'<div class="bar"><i class="q" style="width:'+(c.q?c.dq/c.q*100:0)+'%"></i></div>'
-      +'<span class="efr">'+c.dq+'/'+c.q+'問 穴'+c.blk+'</span>'
+      +'<div class="bar"><i class="q" style="width:'+(c.den?c.num/c.den*100:0)+'%"></i></div>'
+      +'<span class="efr" title="穴埋め行 '+c.drows+'/'+c.rows+'・チェック '+c.dq+'/'+c.q+'">行'+c.drows+'/'+c.rows+' 問'+c.dq+'/'+c.q+'</span>'
       +'<span class="epc">'+c.pct+'%</span></div>';
   });
   h+='<div class="exrow" style="border-top:2px solid rgba(168,85,247,.4);font-weight:900">'
     +'<span class="enm">合計</span><div class="bar"><i class="q" style="width:'+(e.q?e.dq/e.q*100:0)+'%"></i></div>'
-    +'<span class="efr">'+e.dq+'/'+e.q+'問 穴'+e.blk+'</span><span class="epc">'+e.pct+'%</span></div>';
+    +'<span class="efr">'+e.dq+'/'+e.q+'</span><span class="epc">'+e.pct+'%</span></div>';
   return h+'</div>';
 }
 function topicRow(t,subj){
