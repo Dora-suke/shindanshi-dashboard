@@ -120,10 +120,13 @@ def extra_rank(subject,name,rm):
     for kw,nm in ROADMAP_KW.get(subject,[]):
         if kw in base and nm in rm:return rm[nm]
     return None,None
+def tr_text(seg):
+    """<tr>のtextContent相当（空白除去・先頭28文字）。hide-buttons v4 の ftr キーと同じ作り方。"""
+    return re.sub(r'\s+','',re.sub('<[^>]+>','',seg))[:28]
 def analyze_extra(p,subject=None,rm=None):
     fn=os.path.basename(p)
-    html=open(p,encoding='utf-8').read()
-    html=re.sub(r'<a class="srclink".*?</a>','',html,flags=re.S)   # 参照リンク📄は本文扱いしない
+    raw=open(p,encoding='utf-8').read()                           # 表の行テキスト照合用（📄も含めた原文）
+    html=re.sub(r'<a class="srclink".*?</a>','',raw,flags=re.S)    # 参照リンク📄は本文扱いしない
     hidden=[]
     for k in d:
         if k.startswith('sec-hide:') and fn in U.unquote(k):
@@ -143,8 +146,20 @@ def analyze_extra(p,subject=None,rm=None):
                     if not on:continue
                     tid=kk.split(':')[0]
                     rowhide[tid]=rowhide.get(tid,0)+1
+    # 表(<table>)の行をたたんだ分は hide-buttons v4 が mz_fine_<pathname> に
+    # {'ftr:<通し番号>|<行テキスト28文字>':1} で保存する。テキストで照合して論点に割り当てる。
+    trhide=set()
+    for k in d:
+        u=U.unquote(k)
+        if u.startswith('mz_fine_') and u.endswith(fn):
+            vv=jl(k,{})
+            if isinstance(vv,dict):
+                for kk,on in vv.items():
+                    if on and kk.startswith('ftr:') and '|' in kk:
+                        trhide.add(kk.split('|',1)[1])
     # 1つの .tab-content = 1論点（cat-head の .ttl が論点名）
     segs=[(mm.start(),mm.group(1)) for mm in re.finditer(r'<div class="tab-content"[^>]*id="(tab\d+)"',html)]
+    rsegs=[(mm.start(),mm.group(1)) for mm in re.finditer(r'<div class="tab-content"[^>]*id="(tab\d+)"',raw)]
     out=[];tot=done=blk=0
     for idx,(pos,tid) in enumerate(segs):
         end=segs[idx+1][0] if idx+1<len(segs) else len(html)
@@ -155,15 +170,23 @@ def analyze_extra(p,subject=None,rm=None):
         qs+=[sig(mm.group(1)) for mm in re.finditer(r'<div class="chk30-qt">(.{1,1500}?)</div>',seg,re.S)]
         rows=len(re.findall(r'class="row"',seg))
         blanks=len(re.findall(r'class="fill-blank"',seg))
-        if not qs and not rows:continue      # 全範囲マップ等（中身なし）は論点として数えない
+        # この論点に含まれる表の行（td を持つ tbody 内 tr のみ＝ヘッダ行は除外）
+        rpos=rsegs[idx][0] if idx<len(rsegs) else 0
+        rend=rsegs[idx+1][0] if idx+1<len(rsegs) else len(raw)
+        rseg=raw[rpos:rend]
+        trs=[tr_text(m.group(1)) for m in re.finditer(r'<tr[^>]*>(.*?)</tr>',rseg,re.S) if '<td' in m.group(1)]
+        tdone=sum(1 for t in trs if t and t in trhide)
+        if not qs and not rows and not trs:continue   # 全範囲マップ等（中身なし）は論点として数えない
         qdone=sum(1 for q in qs if any(q.startswith(x) for x in hn))
         rdone=min(rowhide.get(tid,0),rows)
-        den=len(qs)+rows
+        den=len(qs)+rows+len(trs)
+        num=qdone+rdone+tdone
         rk,cs=extra_rank(subject,name,rm or {}) if subject else (None,None)
-        out.append({'name':name,'q':len(qs),'dq':qdone,'rows':rows,'drows':rdone,'blk':blanks,
-                    'den':den,'num':qdone+rdone,'pct':round((qdone+rdone)/(den or 1)*100),
+        out.append({'name':name,'q':len(qs),'dq':qdone,'rows':rows,'drows':rdone,
+                    'trs':len(trs),'dtrs':tdone,'blk':blanks,
+                    'den':den,'num':num,'pct':round(num/(den or 1)*100),
                     'rank':rk,'cospa':cs})
-        tot+=den;done+=qdone+rdone;blk+=blanks
+        tot+=den;done+=num;blk+=blanks
     return {'file':fn,'q':tot,'dq':done,'blk':blk,'pct':round(done/(tot or 1)*100),'cats':out}
 def build_extra():
     ex=OrderedDict()
